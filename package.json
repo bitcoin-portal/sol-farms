@@ -1,0 +1,72 @@
+{
+	"name": "sol-farms-bcom",
+	"version": "0.0.1",
+	"description": "Farming Chef Contracts",
+	"scripts": {
+		"chain": "ganache-cli --defaultBalanceEther 10000000000 -i 5777 -p 9545 -l 12500000 -m \"urban prevent meadow draft involve security curtain robot brick question try scatter\"",
+		"compile": "hardhat compile",
+		"test": "npx hardhat test",
+		"test-token": "npx hardhat test test/token.test.js",
+		"test-wraps": "npx hardhat test test/wraps.test.js",
+		"test-farms": "npx hardhat test test/farms.test.js",
+		"coverage": "npx hardhat run coverage --network development"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/bitcoin-portal/sol-farms/"
+	},
+	"author": "Vitalik Marinchenko",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/bitcoin-portal/sol-farms/issues"
+	},
+	"homepage": "http://bitcoin.com/",
+	"devDependencies": {
+		"@nomicfoundation/hardhat-network-helpers": "^1.0.6",
+	    "@nomiclabs/hardhat-ethers": "^2.1.1",
+	    "@nomiclabs/hardhat-truffle5": "^2.0.7",
+	    "@nomiclabs/hardhat-web3": "^2.0.0",
+		"chai": "^4.2.0",
+		"eslint": "^6.5.1",
+		"eslint-config-standard": "^14.1.1",
+		"eslint-plugin-import": "^2.20.0",
+		"eslint-plugin-mocha-no-only": "^1.1.0",
+		"eslint-plugin-node": "^10.0.0",
+		"eslint-plugin-promise": "^4.2.1",
+		"eslint-plugin-standard": "^4.0.1",
+		"eth-sig-util": "^3.0.0",
+		"ethereumjs-util": "^7.0.7",
+		"ethereumjs-wallet": "^1.0.1",
+		"ganache-time-traveler": "^1.0.16",
+		"graphlib": "^2.1.8",
+		"hardhat": "^2.10.1",
+		"hardhat-gas-reporter": "^1.0.4",
+		"keccak256": "^1.0.2",
+		"lodash.startcase": "^4.4.0",
+		"lodash.zip": "4.2.0",
+		"merkletreejs": "^0.2.13",
+		"micromatch": "^4.0.2",
+		"prettier": "^2.3.0",
+		"prettier-plugin-solidity": "^1.0.0-beta.16",
+		"rimraf": "^3.0.2",
+		"solhint": "^3.3.6",
+		"solidity-ast": "^0.4.25",
+		"solidity-coverage": "^0.7.11",
+		"solidity-docgen": "^0.5.3",
+		"truffle": "5.4.29",
+		"web3": "^1.3.0",
+		"yargs": "^16.2.0",
+		"hardhat": "^2.11.2",
+	    "hardhat-gas-reporter": "^1.0.9"
+	},
+	"dependencies": {
+		"@chainlink/contracts": "^0.4.1",
+		"@openzeppelin/contracts": "^4.6.0",
+		"@openzeppelin/test-helpers": "^0.5.13",
+		"@poanet/solidity-flattener": "^3.0.6",
+		"@truffle/hdwallet-provider": "^2.0.13",
+		"eth-gas-reporter": "^0.2.25",
+		"ganache-cli": "^6.12.2",
+		"truffle-plugin-verify": "^0.5.27"
+	}
+}
