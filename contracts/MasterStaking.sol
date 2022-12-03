@@ -120,8 +120,8 @@ contract MasterStaking is Ownable {
 
     // Info of each user.
     struct UserInfo {
-        uint256 amount;     // How many LP tokens the user has provided.
-        uint256 rewardDebt; // Reward debt. See explanation below.
+        uint256 depositAmount;     // How many LP tokens the user has provided.
+        uint256 rewardIssued; // Reward debt. See explanation below.
         //
         // We do some fancy math here. Basically, any point in time, the amount of SUSHIs
         // entitled to a user but is pending to be distributed is:
@@ -131,10 +131,11 @@ contract MasterStaking is Ownable {
 
     // Info of each pool.
     struct PoolInfo {
-        IERC20 lpToken;           // Address of LP token contract.
-        uint256 allocPoint;       // How many allocation points assigned to this pool. SUSHIs to distribute per block.
+        uint256 rewardPoints;       // How many allocation points assigned to this pool. SUSHIs to distribute per block.
         uint256 lastRewardBlock;  // Last block number that SUSHIs distribution occurs.
         uint256 accSushiPerShare; // Accumulated SUSHIs per share, times 1e12. See below.
+        address stakeToken;
+        address rewardToken;
     }
 
     IERC20 public sushi;
@@ -148,19 +149,21 @@ contract MasterStaking is Ownable {
     // Info of each user that stakes LP tokens.
     mapping (uint256 => mapping (address => UserInfo)) public userInfo;
 
+    mapping (uint256 => uint256) public suppliedTokens;
+
     // Total allocation poitns. Must be the sum of all allocation points in all pools.
-    uint256 public totalAllocPoint;
+    mapping (address => uint256) public totalPoints;
 
     event Deposit(
         address indexed user,
         uint256 indexed poolId,
-        uint256 amount
+        uint256 depositAmount
     );
 
     event Withdraw(
         address indexed user,
         uint256 indexed poolId,
-        uint256 amount
+        uint256 withdrawAmount
     );
 
     constructor(
@@ -182,9 +185,10 @@ contract MasterStaking is Ownable {
     // Add a new lp to the pool. Can only be called by the owner.
     // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
     // FORCE THE CHECK ON THIS ACTION! 1 LP TOKEN ONLY ONE FARM
-    function add(
-        uint256 _allocPoint,
-        IERC20 _lpToken,
+    function addNewPool(
+        address _stakeToken,
+        address _rewardToken,
+        uint256 _rewardPoints,
         uint256 _startBlock
     )
         external
@@ -194,14 +198,15 @@ contract MasterStaking is Ownable {
             ? block.number
             : _startBlock;
 
-        totalAllocPoint = totalAllocPoint
-            + _allocPoint;
+        totalPoints[_rewardToken] =
+        totalPoints[_rewardToken] + _rewardPoints;
 
         poolInfo.push(
             PoolInfo(
                 {
-                    lpToken: _lpToken,
-                    allocPoint: _allocPoint,
+                    stakeToken: _stakeToken,
+                    rewardToken: _rewardToken,
+                    rewardPoints: _rewardPoints,
                     lastRewardBlock: startingBlock,
                     accSushiPerShare: 0
                 }
@@ -209,22 +214,24 @@ contract MasterStaking is Ownable {
         );
     }
 
-    function set(
+    function setPoolRewards(
         uint256 _poolId,
-        uint256 _allocPoint
+        uint256 _rewardPoints
     )
         external
         onlyOwner
     {
-        totalAllocPoint = totalAllocPoint
-            - poolInfo[_poolId].allocPoint
-            + _allocPoint;
+        PoolInfo memory pool = poolInfo[_poolId];
+        address rewardToken = pool.rewardToken;
 
-        poolInfo[_poolId].allocPoint = _allocPoint;
+        totalPoints[rewardToken] = totalPoints[rewardToken]
+            - pool.rewardPoints
+            + _rewardPoints;
+
+        poolInfo[_poolId].rewardPoints = _rewardPoints;
     }
 
-    // View function to see pending SUSHIs on frontend.
-    function pendingSushi(
+    function pendingUserRewards(
         uint256 _poolId,
         address _user
     )
@@ -236,22 +243,71 @@ contract MasterStaking is Ownable {
         UserInfo storage user = userInfo[_poolId][_user];
 
         uint256 accSushiPerShare = pool.accSushiPerShare;
-        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+
+        uint256 lpSupply = IERC20(pool.stakeToken).balanceOf(
+            address(this)
+        );
 
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
 
 
             uint256 sushiReward = sushiPerBlock
-                * pool.allocPoint
-                / totalAllocPoint;
+                * pool.rewardPoints
+                / totalPoints[pool.rewardToken];
 
             accSushiPerShare = accSushiPerShare + (sushiReward * 1e12 / lpSupply);
         }
 
-        return user.amount
+        return user.depositAmount
             * accSushiPerShare
             / 1e12
-            - user.rewardDebt;
+            - user.rewardIssued;
+    }
+
+    function depositTokens(
+        uint256 _poolId,
+        uint256 _amount
+    )
+        external
+    {
+        PoolInfo storage pool = poolInfo[_poolId];
+        UserInfo storage user = userInfo[_poolId][msg.sender];
+
+        updatePool(
+            _poolId
+        );
+
+        if (user.depositAmount > 0) {
+
+            uint256 pending = user.depositAmount
+                * pool.accSushiPerShare
+                / 1e12
+                - user.rewardIssued;
+
+            sushi.transfer(
+                msg.sender,
+                pending
+            );
+        }
+
+        IERC20(pool.stakeToken).safeTransferFrom(
+            address(msg.sender),
+            address(this),
+            _amount
+        );
+
+        user.depositAmount =
+        user.depositAmount + _amount;
+
+        user.rewardIssued = user.depositAmount
+            * pool.accSushiPerShare
+            / 1e12;
+
+        emit Deposit(
+            msg.sender,
+            _poolId,
+            _amount
+        );
     }
 
     // Update reward vairables for all pools. Be careful of gas spending!
@@ -276,7 +332,7 @@ contract MasterStaking is Ownable {
             return;
         }
 
-        uint256 lpSupply = pool.lpToken.balanceOf(
+        uint256 lpSupply = IERC20(pool.stakeToken).balanceOf(
             address(this)
         );
 
@@ -285,66 +341,20 @@ contract MasterStaking is Ownable {
             return;
         }
 
-        uint256 sushiReward = sushiPerBlock
-            * pool.allocPoint
-            / totalAllocPoint;
+        uint256 totalReward = sushiPerBlock
+            * pool.rewardPoints
+            / totalPoints[pool.rewardToken];
 
         sushi.transfer(
             address(this),
-            sushiReward
+            totalReward
         );
 
-        pool.accSushiPerShare += sushiReward
+        pool.accSushiPerShare += totalReward
             * 1e12
             / lpSupply;
 
         pool.lastRewardBlock = block.number;
-    }
-
-    function deposit(
-        uint256 _poolId,
-        uint256 _amount
-    )
-        external
-    {
-        PoolInfo storage pool = poolInfo[_poolId];
-        UserInfo storage user = userInfo[_poolId][msg.sender];
-
-        updatePool(
-            _poolId
-        );
-
-        if (user.amount > 0) {
-
-            uint256 pending = user.amount
-                * pool.accSushiPerShare
-                / 1e12
-                - user.rewardDebt;
-
-            sushi.transfer(
-                msg.sender,
-                pending
-            );
-        }
-
-        pool.lpToken.safeTransferFrom(
-            address(msg.sender),
-            address(this),
-            _amount
-        );
-
-        user.amount =
-        user.amount + _amount;
-
-        user.rewardDebt = user.amount
-            * pool.accSushiPerShare
-            / 1e12;
-
-        emit Deposit(
-            msg.sender,
-            _poolId,
-            _amount
-        );
     }
 
     // Withdraw LP tokens from MasterChef.
@@ -361,25 +371,24 @@ contract MasterStaking is Ownable {
             _poolId
         );
 
-        user.amount =
-        user.amount - _amount;
+        user.depositAmount =
+        user.depositAmount - _amount;
 
-        uint256 pending = user.amount
+        uint256 pending = user.depositAmount
             * pool.accSushiPerShare
             / 1e12
-            - user.rewardDebt;
-
+            - user.rewardIssued;
 
         sushi.transfer(
             msg.sender,
             pending
         );
 
-        user.rewardDebt = user.amount
+        user.rewardIssued = user.depositAmount
             * pool.accSushiPerShare
             / 1e12;
 
-        pool.lpToken.safeTransfer(
+        IERC20(pool.stakeToken).safeTransfer(
             address(msg.sender),
             _amount
         );
