@@ -17,27 +17,76 @@ interface IERC20 {
     )
         external
         returns (bool);
+
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    )
+        external
+        returns (bool);
 }
 
-library SafeERC20 {
+contract SafeERC20 {
 
     function safeTransfer(
-        IERC20 token,
-        address to,
-        uint256 value
+        IERC20 _token,
+        address _to,
+        uint256 _value
     )
         internal
     {
+        callOptionalReturn(
+            _token,
+            abi.encodeWithSelector(
+                _token.transfer.selector,
+                _to,
+                _value
+            )
+        );
     }
 
     function safeTransferFrom(
-        IERC20 token,
-        address from,
-        address to,
-        uint256 value
+        IERC20 _token,
+        address _from,
+        address _to,
+        uint256 _value
     )
         internal
     {
+        callOptionalReturn(
+            _token,
+            abi.encodeWithSelector(
+                _token.transferFrom.selector,
+                _from,
+                _to,
+                _value
+            )
+        );
+    }
+
+    function callOptionalReturn(
+        IERC20 _token,
+        bytes memory _data
+    )
+        private
+    {
+        (
+            bool success,
+            bytes memory returndata
+        ) = address(_token).call(_data);
+
+        require(
+            success,
+            "SafeERC20: CALL_FAILED"
+        );
+
+        if (returndata.length > 0) {
+            require(
+                abi.decode(returndata, (bool)),
+                "SafeERC20: OPERATION_FAILED"
+            );
+        }
     }
 }
 
@@ -114,9 +163,7 @@ contract Ownable {
     }
 }
 
-contract MasterStaking is Ownable {
-
-    using SafeERC20 for IERC20;
+contract MasterStaking is Ownable, SafeERC20 {
 
     // Info of each user.
     struct UserInfo {
@@ -134,8 +181,8 @@ contract MasterStaking is Ownable {
         uint256 rewardPoints;       // How many allocation points assigned to this pool. SUSHIs to distribute per block.
         uint256 lastRewardBlock;  // Last block number that SUSHIs distribution occurs.
         uint256 accSushiPerShare; // Accumulated SUSHIs per share, times 1e12. See below.
-        address stakeToken;
-        address rewardToken;
+        IERC20 stakeToken;
+        IERC20 rewardToken;
     }
 
     IERC20 public sushi;
@@ -152,7 +199,7 @@ contract MasterStaking is Ownable {
     mapping (uint256 => uint256) public suppliedTokens;
 
     // Total allocation poitns. Must be the sum of all allocation points in all pools.
-    mapping (address => uint256) public totalPoints;
+    mapping (IERC20 => uint256) public totalPoints;
 
     event Deposit(
         address indexed user,
@@ -186,8 +233,8 @@ contract MasterStaking is Ownable {
     // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
     // FORCE THE CHECK ON THIS ACTION! 1 LP TOKEN ONLY ONE FARM
     function addNewPool(
-        address _stakeToken,
-        address _rewardToken,
+        IERC20 _stakeToken,
+        IERC20 _rewardToken,
         uint256 _rewardPoints,
         uint256 _startBlock
     )
@@ -222,7 +269,7 @@ contract MasterStaking is Ownable {
         onlyOwner
     {
         PoolInfo memory pool = poolInfo[_poolId];
-        address rewardToken = pool.rewardToken;
+        IERC20 rewardToken = pool.rewardToken;
 
         totalPoints[rewardToken] = totalPoints[rewardToken]
             - pool.rewardPoints
@@ -290,7 +337,8 @@ contract MasterStaking is Ownable {
             );
         }
 
-        IERC20(pool.stakeToken).safeTransferFrom(
+        safeTransferFrom(
+            pool.stakeToken,
             address(msg.sender),
             address(this),
             _amount
@@ -310,7 +358,6 @@ contract MasterStaking is Ownable {
         );
     }
 
-    // Update reward vairables for all pools. Be careful of gas spending!
     function massUpdatePools()
         external
     {
@@ -320,7 +367,6 @@ contract MasterStaking is Ownable {
         }
     }
 
-    // Update reward variables of the given pool to be up-to-date.
     function updatePool(
         uint256 _poolId
     )
@@ -388,7 +434,8 @@ contract MasterStaking is Ownable {
             * pool.accSushiPerShare
             / 1e12;
 
-        IERC20(pool.stakeToken).safeTransfer(
+        safeTransfer(
+            pool.stakeToken,
             address(msg.sender),
             _amount
         );

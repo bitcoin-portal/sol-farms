@@ -83,11 +83,11 @@ contract SafeERC20 {
     }
 }
 
-contract WrappedToken is SafeERC20 {
+contract TokenWrapper is SafeERC20 {
 
     IERC20 public immutable stakeToken;
 
-    uint256 private _totalSupply;
+    uint256 private _totalStaked;
     mapping(address => uint256) private _balances;
 
     constructor(
@@ -96,15 +96,15 @@ contract WrappedToken is SafeERC20 {
         stakeToken = _stakeToken;
     }
 
-    function totalSupply()
+    function totalStaked()
         public
         view
         returns (uint256)
     {
-        return _totalSupply;
+        return _totalStaked;
     }
 
-    function balanceOf(
+    function userBalance(
         address _walletAddress
     )
         public
@@ -120,8 +120,8 @@ contract WrappedToken is SafeERC20 {
     )
         internal
     {
-        _totalSupply =
-        _totalSupply + _amount;
+        _totalStaked =
+        _totalStaked + _amount;
 
         _balances[_address] =
         _balances[_address] + _amount;
@@ -140,8 +140,8 @@ contract WrappedToken is SafeERC20 {
     )
         internal
     {
-        _totalSupply =
-        _totalSupply - _amount;
+        _totalStaked =
+        _totalStaked - _amount;
 
         _balances[_address] =
         _balances[_address] - _amount;
@@ -154,21 +154,20 @@ contract WrappedToken is SafeERC20 {
     }
 }
 
-contract VerseStaker is WrappedToken {
+contract SingleVerseStaker is TokenWrapper {
 
     IERC20 public immutable rewardToken;
 
     uint256 public constant PRECISION = 1E18;
-    uint256 public constant DURATION_MIN = 5 weeks;
-    address public constant ZERO_ADDRESS = address(0);
 
     uint256 public rewardRate;
+    uint256 public rewardTotal;
     uint256 public periodFinish;
     address public ownerAddress;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
 
-    mapping(address => uint256) public rewards;
+    mapping(address => uint256) public userRewards;
     mapping(address => uint256) public userRewardPerTokenPaid;
 
     modifier onlyOwner() {
@@ -179,17 +178,15 @@ contract VerseStaker is WrappedToken {
         _;
     }
 
-    modifier updateReward(
-        address _account
-    ) {
-
+    modifier updatePool() {
         rewardPerTokenStored = rewardPerToken();
         lastUpdateTime = lastTimeRewardApplicable();
+        _;
+    }
 
-        if (_account != ZERO_ADDRESS) {
-            rewards[_account] = earned(_account);
-            userRewardPerTokenPaid[_account] = rewardPerTokenStored;
-        }
+    modifier updateUser() {
+        userRewards[msg.sender] = earned(msg.sender);
+        userRewardPerTokenPaid[msg.sender] = rewardPerTokenStored;
         _;
     }
 
@@ -216,7 +213,7 @@ contract VerseStaker is WrappedToken {
         IERC20 _stakeToken,
         IERC20 _rewardToken
     )
-        WrappedToken(
+        TokenWrapper(
             _stakeToken
         )
     {
@@ -239,7 +236,7 @@ contract VerseStaker is WrappedToken {
         view
         returns (uint256)
     {
-        if (totalSupply() == 0) {
+        if (totalStaked() == 0) {
             return rewardPerTokenStored;
         }
 
@@ -249,7 +246,7 @@ contract VerseStaker is WrappedToken {
         uint256 extraFund = timeFrame
             * rewardRate
             * PRECISION
-            / totalSupply();
+            / totalStaked();
 
         return rewardPerTokenStored
             + extraFund;
@@ -265,17 +262,18 @@ contract VerseStaker is WrappedToken {
         uint256 difference = rewardPerToken()
             - userRewardPerTokenPaid[_walletAddress];
 
-        return balanceOf(_walletAddress)
+        return userBalance(_walletAddress)
             * difference
             / PRECISION
-            + rewards[_walletAddress];
+            + userRewards[_walletAddress];
     }
 
-    function stake(
+    function poolDeposit(
         uint256 _stakeAmount
     )
         external
-        updateReward(msg.sender)
+        updatePool()
+        updateUser()
     {
         require(
             _stakeAmount > 0,
@@ -295,11 +293,12 @@ contract VerseStaker is WrappedToken {
         );
     }
 
-    function withdraw(
+    function poolWithdraw(
         uint256 _withdrawAmount
     )
         public
-        updateReward(msg.sender)
+        updatePool()
+        updateUser()
     {
         require(
             _withdrawAmount > 0,
@@ -319,14 +318,14 @@ contract VerseStaker is WrappedToken {
         );
     }
 
-    function exit()
+    function exitPool()
         external
     {
-        uint256 withdrawAmount = balanceOf(
+        uint256 withdrawAmount = userBalance(
             msg.sender
         );
 
-        withdraw(
+        poolWithdraw(
             withdrawAmount
         );
 
@@ -335,7 +334,8 @@ contract VerseStaker is WrappedToken {
 
     function getReward()
         public
-        updateReward(msg.sender)
+        updatePool()
+        updateUser()
         returns (uint256 rewardAmount)
     {
         address senderAddress = msg.sender;
@@ -344,9 +344,11 @@ contract VerseStaker is WrappedToken {
             senderAddress
         );
 
-        if (rewardAmount == 0) return 0;
+        if (rewardAmount == 0) {
+            return 0;
+        }
 
-        rewards[senderAddress] = 0;
+        userRewards[senderAddress] = 0;
 
         safeTransfer(
             rewardToken,
@@ -369,16 +371,17 @@ contract VerseStaker is WrappedToken {
         ownerAddress = _newOwner;
     }
 
-    function notifyRewardAmount(
-        uint256 _rewardAmount
+    function updateRewards(
+        uint256 _rewardAmount,
+        uint256 _rewardTimeFrame
     )
         external
         onlyOwner
-        updateReward(ZERO_ADDRESS)
+        updatePool()
     {
         if (block.timestamp >= periodFinish) {
             rewardRate = _rewardAmount
-                / DURATION_MIN;
+                / _rewardTimeFrame;
         }
             else
         {
@@ -392,13 +395,13 @@ contract VerseStaker is WrappedToken {
                 + leftOver;
 
             rewardRate = newTotal
-                / DURATION_MIN;
+                / _rewardTimeFrame;
         }
 
         lastUpdateTime = block.timestamp;
 
         periodFinish = lastUpdateTime
-            + DURATION_MIN;
+            + _rewardTimeFrame;
 
         emit RewardAdded(
             _rewardAmount
