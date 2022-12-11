@@ -336,7 +336,7 @@ contract SimpleFarm is TokenWrapper {
 
             safeTransfer(
                 rewardToken,
-                ownerAddress,
+                managerAddress,
                 rewardRemains
             );
         }
@@ -346,7 +346,7 @@ contract SimpleFarm is TokenWrapper {
 
         safeTransferFrom(
             rewardToken,
-            ownerAddress,
+            managerAddress,
             address(this),
             newRewardAmount
         );
