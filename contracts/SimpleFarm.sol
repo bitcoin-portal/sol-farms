@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: -- vitally.eth --
+// SPDX-License-Identifier: -- BCOM --
 
 pragma solidity =0.8.17;
 
@@ -96,7 +96,7 @@ contract TokenWrapper is SafeERC20 {
         stakeToken = _stakeToken;
     }
 
-    function totalStaked()
+    function totalSupply()
         public
         view
         returns (uint256)
@@ -104,7 +104,7 @@ contract TokenWrapper is SafeERC20 {
         return _totalStaked;
     }
 
-    function userBalance(
+    function balanceOf(
         address _walletAddress
     )
         public
@@ -123,15 +123,10 @@ contract TokenWrapper is SafeERC20 {
         _totalStaked =
         _totalStaked + _amount;
 
-        _balances[_address] =
-        _balances[_address] + _amount;
-
-        safeTransferFrom(
-            stakeToken,
-            _address,
-            address(this),
-            _amount
-        );
+        unchecked {
+            _balances[_address] =
+            _balances[_address] + _amount;
+        }
     }
 
     function _withdraw(
@@ -140,21 +135,17 @@ contract TokenWrapper is SafeERC20 {
     )
         internal
     {
-        _totalStaked =
-        _totalStaked - _amount;
+        unchecked {
+            _totalStaked =
+            _totalStaked - _amount;
+        }
 
         _balances[_address] =
         _balances[_address] - _amount;
-
-        safeTransfer(
-            stakeToken,
-            _address,
-            _amount
-        );
     }
 }
 
-contract SingleVerseStaker is TokenWrapper {
+contract SimpleFarm is TokenWrapper {
 
     IERC20 public immutable rewardToken;
 
@@ -163,17 +154,28 @@ contract SingleVerseStaker is TokenWrapper {
     uint256 public rewardRate;
     uint256 public rewardTotal;
     uint256 public periodFinish;
-    address public ownerAddress;
+    uint256 public rewardDuration;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
 
     mapping(address => uint256) public userRewards;
     mapping(address => uint256) public userRewardPerTokenPaid;
 
+    address public ownerAddress;
+    address public managerAddress;
+
     modifier onlyOwner() {
         require(
             msg.sender == ownerAddress,
-            "VerseStaker: INVALID_OWNER"
+            "SimpleFarm: INVALID_OWNER"
+        );
+        _;
+    }
+
+    modifier onlyManager() {
+        require(
+            msg.sender == managerAddress,
+            "SimpleFarm: INVALID_MANAGER"
         );
         _;
     }
@@ -190,23 +192,32 @@ contract SingleVerseStaker is TokenWrapper {
         _;
     }
 
-    event RewardAdded(
-        uint256 reward
-    );
-
     event Staked(
         address indexed user,
-        uint256 amount
+        uint256 tokenAmount
     );
 
     event Withdrawn(
         address indexed user,
-        uint256 amount
+        uint256 tokenAmount
+    );
+
+    event RewardAdded(
+        uint256 tokenAmount
     );
 
     event RewardPaid(
         address indexed user,
-        uint256 reward
+        uint256 tokenAmount
+    );
+
+    event Recovered(
+        IERC20 indexed token,
+        uint256 tokenAmount
+    );
+
+    event RewardsDurationUpdated(
+        uint256 newRewardDuration
     );
 
     constructor(
@@ -218,15 +229,17 @@ contract SingleVerseStaker is TokenWrapper {
         )
     {
         rewardToken = _rewardToken;
+
         ownerAddress = msg.sender;
+        managerAddress = msg.sender;
     }
 
     function lastTimeRewardApplicable()
         public
         view
-        returns (uint256)
+        returns (uint256 res)
     {
-        return block.timestamp < periodFinish
+        res = block.timestamp < periodFinish
             ? block.timestamp
             : periodFinish;
     }
@@ -236,7 +249,7 @@ contract SingleVerseStaker is TokenWrapper {
         view
         returns (uint256)
     {
-        if (totalStaked() == 0) {
+        if (totalSupply() == 0) {
             return rewardPerTokenStored;
         }
 
@@ -246,7 +259,7 @@ contract SingleVerseStaker is TokenWrapper {
         uint256 extraFund = timeFrame
             * rewardRate
             * PRECISION
-            / totalStaked();
+            / totalSupply();
 
         return rewardPerTokenStored
             + extraFund;
@@ -262,7 +275,7 @@ contract SingleVerseStaker is TokenWrapper {
         uint256 difference = rewardPerToken()
             - userRewardPerTokenPaid[_walletAddress];
 
-        return userBalance(_walletAddress)
+        return balanceOf(_walletAddress)
             * difference
             / PRECISION
             + userRewards[_walletAddress];
@@ -275,16 +288,18 @@ contract SingleVerseStaker is TokenWrapper {
         updatePool()
         updateUser()
     {
-        require(
-            _stakeAmount > 0,
-            "VerseStaker: INVALID_AMOUNT"
-        );
-
         address senderAddress = msg.sender;
 
         _stake(
             _stakeAmount,
             senderAddress
+        );
+
+        safeTransferFrom(
+            stakeToken,
+            senderAddress,
+            address(this),
+            _stakeAmount
         );
 
         emit Staked(
@@ -300,16 +315,17 @@ contract SingleVerseStaker is TokenWrapper {
         updatePool()
         updateUser()
     {
-        require(
-            _withdrawAmount > 0,
-            "VerseStaker: INVALID_AMOUNT"
-        );
-
         address senderAddress = msg.sender;
 
         _withdraw(
             _withdrawAmount,
             senderAddress
+        );
+
+        safeTransfer(
+            stakeToken,
+            senderAddress,
+            _withdrawAmount
         );
 
         emit Withdrawn(
@@ -321,7 +337,7 @@ contract SingleVerseStaker is TokenWrapper {
     function exitPool()
         external
     {
-        uint256 withdrawAmount = userBalance(
+        uint256 withdrawAmount = balanceOf(
             msg.sender
         );
 
@@ -371,40 +387,121 @@ contract SingleVerseStaker is TokenWrapper {
         ownerAddress = _newOwner;
     }
 
-    function updateRewards(
-        uint256 _rewardAmount,
-        uint256 _rewardTimeFrame
+    function changeManager(
+        address _newManager
     )
         external
         onlyOwner
+    {
+        managerAddress = _newManager;
+    }
+
+    function recoverToken(
+        IERC20 tokenAddress,
+        uint256 tokenAmount
+    )
+        external
+        onlyOwner
+    {
+        if (tokenAddress == stakeToken) {
+            revert("SimpleFarm: INVALID_TOKEN");
+        }
+
+        if (tokenAddress == rewardToken) {
+            revert("SimpleFarm: INVALID_TOKEN");
+        }
+
+        safeTransfer(
+            tokenAddress,
+            ownerAddress,
+            tokenAmount
+        );
+
+        emit Recovered(
+            tokenAddress,
+            tokenAmount
+        );
+    }
+
+    function setRewardDuration(
+        uint256 _rewardDuration
+    )
+        external
+        onlyManager
+    {
+        require(
+            block.timestamp > periodFinish,
+            "SimpleFarm: CHANGED_TOO_EARLY"
+        );
+
+        require(
+            _rewardDuration > 0,
+            "SimpleFarm: INVALID_DURATION"
+        );
+
+        rewardDuration = _rewardDuration;
+
+        emit RewardsDurationUpdated(
+            _rewardDuration
+        );
+    }
+
+    function setRewardRate(
+        uint256 _newRewardRate
+    )
+        external
+        onlyManager
         updatePool()
     {
-        if (block.timestamp >= periodFinish) {
-            rewardRate = _rewardAmount
-                / _rewardTimeFrame;
-        }
-            else
-        {
-            uint256 remaining = periodFinish
+        require(
+            _newRewardRate > 0,
+            "SimpleFarm: INVALID_RATE"
+        );
+
+        require(
+            rewardDuration > 0,
+            "SimpleFarm: INVALID_DURATION"
+        );
+
+        if (block.timestamp < periodFinish) {
+
+            require(
+                _newRewardRate >= rewardRate,
+                "SimpleFarm: RATE_CANT_DECREASE"
+            );
+
+            uint256 remainingTime = periodFinish
                 - block.timestamp;
 
-            uint256 leftOver = remaining
+            uint256 rewardRemains = remainingTime
                 * rewardRate;
 
-            uint256 newTotal = _rewardAmount
-                + leftOver;
-
-            rewardRate = newTotal
-                / _rewardTimeFrame;
+            safeTransfer(
+                rewardToken,
+                ownerAddress,
+                rewardRemains
+            );
         }
+
+        uint256 newRewardAmount = rewardDuration
+            * _newRewardRate;
+
+        safeTransferFrom(
+            rewardToken,
+            ownerAddress,
+            address(this),
+            newRewardAmount
+        );
+
+        rewardRate = _newRewardRate;
+
+        periodFinish = block.timestamp
+            + rewardDuration;
 
         lastUpdateTime = block.timestamp;
 
-        periodFinish = lastUpdateTime
-            + _rewardTimeFrame;
-
         emit RewardAdded(
-            _rewardAmount
+            newRewardAmount
         );
     }
 }
