@@ -1,4 +1,4 @@
-const Token = artifacts.require("Token");
+const Token = artifacts.require("TestToken");
 const catchRevert = require("./exceptionsHelpers.js").catchRevert;
 
 require("./utils");
@@ -37,7 +37,7 @@ contract("Token", ([owner, alice, bob, random]) => {
             const name = await token.name();
             assert.equal(
                 name,
-                "Token"
+                "TestToken"
             );
         });
 
@@ -45,7 +45,7 @@ contract("Token", ([owner, alice, bob, random]) => {
             const symbol = await token.symbol();
             assert.equal(
                 symbol,
-                "TKN"
+                "T-TKN"
             );
         });
 
