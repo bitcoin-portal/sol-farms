@@ -2,154 +2,11 @@
 
 pragma solidity =0.8.17;
 
-interface IERC20 {
-
-    function transfer(
-        address recipient,
-        uint256 amount
-    )
-        external
-        returns (bool);
-
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    )
-        external
-        returns (bool);
-}
-
-contract SafeERC20 {
-
-    function safeTransfer(
-        IERC20 _token,
-        address _to,
-        uint256 _value
-    )
-        internal
-    {
-        callOptionalReturn(
-            _token,
-            abi.encodeWithSelector(
-                _token.transfer.selector,
-                _to,
-                _value
-            )
-        );
-    }
-
-    function safeTransferFrom(
-        IERC20 _token,
-        address _from,
-        address _to,
-        uint256 _value
-    )
-        internal
-    {
-        callOptionalReturn(
-            _token,
-            abi.encodeWithSelector(
-                _token.transferFrom.selector,
-                _from,
-                _to,
-                _value
-            )
-        );
-    }
-
-    function callOptionalReturn(
-        IERC20 _token,
-        bytes memory _data
-    )
-        private
-    {
-        (
-            bool success,
-            bytes memory returndata
-        ) = address(_token).call(_data);
-
-        require(
-            success,
-            "SafeERC20: CALL_FAILED"
-        );
-
-        if (returndata.length > 0) {
-            require(
-                abi.decode(returndata, (bool)),
-                "SafeERC20: OPERATION_FAILED"
-            );
-        }
-    }
-}
-
-contract TokenWrapper is SafeERC20 {
-
-    IERC20 public immutable stakeToken;
-
-    uint256 private _totalStaked;
-    mapping(address => uint256) private _balances;
-
-    constructor(
-        IERC20 _stakeToken
-    ) {
-        stakeToken = _stakeToken;
-    }
-
-    function totalSupply()
-        public
-        view
-        returns (uint256)
-    {
-        return _totalStaked;
-    }
-
-    function balanceOf(
-        address _walletAddress
-    )
-        public
-        view
-        returns (uint256)
-    {
-        return _balances[_walletAddress];
-    }
-
-    function _stake(
-        uint256 _amount,
-        address _address
-    )
-        internal
-    {
-        _totalStaked =
-        _totalStaked + _amount;
-
-        unchecked {
-            _balances[_address] =
-            _balances[_address] + _amount;
-        }
-    }
-
-    function _withdraw(
-        uint256 _amount,
-        address _address
-    )
-        internal
-    {
-        unchecked {
-            _totalStaked =
-            _totalStaked - _amount;
-        }
-
-        _balances[_address] =
-        _balances[_address] - _amount;
-    }
-}
+import "./TokenWrapper.sol";
 
 contract SimpleFarm is TokenWrapper {
 
     IERC20 public immutable rewardToken;
-
-    uint256 public constant PRECISION = 1E18;
 
     uint256 public rewardRate;
     uint256 public rewardTotal;
@@ -157,6 +14,8 @@ contract SimpleFarm is TokenWrapper {
     uint256 public rewardDuration;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
+
+    uint256 constant PRECISION = 1E18;
 
     mapping(address => uint256) public userRewards;
     mapping(address => uint256) public userRewardPerTokenPaid;
