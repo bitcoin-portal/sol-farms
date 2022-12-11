@@ -9,7 +9,6 @@ contract SimpleFarm is TokenWrapper {
     IERC20 public immutable rewardToken;
 
     uint256 public rewardRate;
-    uint256 public rewardTotal;
     uint256 public periodFinish;
     uint256 public rewardDuration;
     uint256 public lastUpdateTime;
