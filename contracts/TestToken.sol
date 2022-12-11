@@ -2,10 +2,10 @@
 
 pragma solidity =0.8.17;
 
-contract Token {
+contract TestToken {
 
-    string private _name = "Token";
-    string private _symbol = "TKN";
+    string private _name = "TestToken";
+    string private _symbol = "T-TKN";
     uint8 private _decimals = 18;
 
     address public master;
