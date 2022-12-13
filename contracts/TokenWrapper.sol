@@ -6,16 +6,8 @@ import "./SafeERC20.sol";
 
 contract TokenWrapper is SafeERC20 {
 
-    IERC20 public immutable stakeToken;
-
     uint256 private _totalStaked;
     mapping(address => uint256) private _balances;
-
-    constructor(
-        IERC20 _stakeToken
-    ) {
-        stakeToken = _stakeToken;
-    }
 
     function totalSupply()
         public

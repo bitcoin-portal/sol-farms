@@ -6,6 +6,7 @@ import "./TokenWrapper.sol";
 
 contract SimpleFarm is TokenWrapper {
 
+    IERC20 public immutable stakeToken;
     IERC20 public immutable rewardToken;
 
     uint256 public rewardRate;
@@ -81,11 +82,8 @@ contract SimpleFarm is TokenWrapper {
     constructor(
         IERC20 _stakeToken,
         IERC20 _rewardToken
-    )
-        TokenWrapper(
-            _stakeToken
-        )
-    {
+    ) {
+        stakeToken = _stakeToken;
         rewardToken = _rewardToken;
 
         ownerAddress = msg.sender;
