@@ -287,7 +287,7 @@ contract SimpleFarm is TokenWrapper {
     {
         require(
             block.timestamp > periodFinish,
-            "SimpleFarm: CHANGED_TOO_EARLY"
+            "SimpleFarm: ONGOING_DISTRIBUTION"
         );
 
         require(
