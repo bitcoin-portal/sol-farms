@@ -171,6 +171,13 @@ contract SimpleFarm is TokenWrapper {
         updatePool()
         updateUser()
     {
+        if (block.timestamp < periodFinish) {
+            require(
+                totalSupply() > _withdrawAmount,
+                "SimpleFarm: STILL_EARNING"
+            );
+        }
+
         address senderAddress = msg.sender;
 
         _withdraw(
@@ -309,6 +316,11 @@ contract SimpleFarm is TokenWrapper {
         onlyManager
         updatePool()
     {
+        require(
+            totalSupply() > 0,
+            "SimpleFarm: NO_SUPPLY"
+        );
+
         require(
             _newRewardRate > 0,
             "SimpleFarm: INVALID_RATE"
