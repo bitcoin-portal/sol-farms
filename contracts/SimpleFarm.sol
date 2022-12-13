@@ -10,7 +10,7 @@ contract SimpleFarm is TokenWrapper {
     IERC20 public immutable rewardToken;
 
     uint256 public rewardRate;
-    uint256 public periodFinish;
+    uint256 public periodFinished;
     uint256 public rewardDuration;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
@@ -95,9 +95,9 @@ contract SimpleFarm is TokenWrapper {
         view
         returns (uint256 res)
     {
-        res = block.timestamp < periodFinish
+        res = block.timestamp < periodFinished
             ? block.timestamp
-            : periodFinish;
+            : periodFinished;
     }
 
     function rewardPerToken()
@@ -171,7 +171,7 @@ contract SimpleFarm is TokenWrapper {
         updatePool()
         updateUser()
     {
-        if (block.timestamp < periodFinish) {
+        if (block.timestamp < periodFinished) {
             require(
                 totalSupply() > _withdrawAmount,
                 "SimpleFarm: STILL_EARNING"
@@ -293,7 +293,7 @@ contract SimpleFarm is TokenWrapper {
         onlyManager
     {
         require(
-            block.timestamp > periodFinish,
+            block.timestamp > periodFinished,
             "SimpleFarm: ONGOING_DISTRIBUTION"
         );
 
@@ -331,14 +331,14 @@ contract SimpleFarm is TokenWrapper {
             "SimpleFarm: INVALID_DURATION"
         );
 
-        if (block.timestamp < periodFinish) {
+        if (block.timestamp < periodFinished) {
 
             require(
                 _newRewardRate >= rewardRate,
                 "SimpleFarm: RATE_CANT_DECREASE"
             );
 
-            uint256 remainingTime = periodFinish
+            uint256 remainingTime = periodFinished
                 - block.timestamp;
 
             uint256 rewardRemains = remainingTime
@@ -363,10 +363,9 @@ contract SimpleFarm is TokenWrapper {
 
         rewardRate = _newRewardRate;
 
-        periodFinish = block.timestamp
-            + rewardDuration;
-
         lastUpdateTime = block.timestamp;
+        periodFinished = block.timestamp
+            + rewardDuration;
 
         emit RewardAdded(
             newRewardAmount
