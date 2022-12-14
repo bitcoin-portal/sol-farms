@@ -13,12 +13,12 @@ contract SimpleFarm is TokenWrapper {
     uint256 public periodFinished;
     uint256 public rewardDuration;
     uint256 public lastUpdateTime;
-    uint256 public rewardPerTokenStored;
+    uint256 public perTokenStored;
 
     uint256 constant PRECISION = 1E18;
 
     mapping(address => uint256) public userRewards;
-    mapping(address => uint256) public userRewardPerTokenPaid;
+    mapping(address => uint256) public perTokenPaid;
 
     address public ownerAddress;
     address public managerAddress;
@@ -40,14 +40,14 @@ contract SimpleFarm is TokenWrapper {
     }
 
     modifier updatePool() {
-        rewardPerTokenStored = rewardPerToken();
+        perTokenStored = rewardPerToken();
         lastUpdateTime = lastTimeRewardApplicable();
         _;
     }
 
     modifier updateUser() {
         userRewards[msg.sender] = earned(msg.sender);
-        userRewardPerTokenPaid[msg.sender] = rewardPerTokenStored;
+        perTokenPaid[msg.sender] = perTokenStored;
         _;
     }
 
@@ -105,8 +105,8 @@ contract SimpleFarm is TokenWrapper {
         view
         returns (uint256)
     {
-        if (totalSupply() == 0) {
-            return rewardPerTokenStored;
+        if (_totalStaked == 0) {
+            return perTokenStored;
         }
 
         uint256 timeFrame = lastTimeRewardApplicable()
@@ -115,9 +115,9 @@ contract SimpleFarm is TokenWrapper {
         uint256 extraFund = timeFrame
             * rewardRate
             * PRECISION
-            / totalSupply();
+            / _totalStaked;
 
-        return rewardPerTokenStored
+        return perTokenStored
             + extraFund;
     }
 
@@ -129,9 +129,9 @@ contract SimpleFarm is TokenWrapper {
         returns (uint256)
     {
         uint256 difference = rewardPerToken()
-            - userRewardPerTokenPaid[_walletAddress];
+            - perTokenPaid[_walletAddress];
 
-        return balanceOf(_walletAddress)
+        return _balances[_walletAddress]
             * difference
             / PRECISION
             + userRewards[_walletAddress];
@@ -173,7 +173,7 @@ contract SimpleFarm is TokenWrapper {
     {
         if (block.timestamp < periodFinished) {
             require(
-                totalSupply() > _withdrawAmount,
+                _totalStaked > _withdrawAmount,
                 "SimpleFarm: STILL_EARNING"
             );
         }
@@ -200,9 +200,9 @@ contract SimpleFarm is TokenWrapper {
     function exitPool()
         external
     {
-        uint256 withdrawAmount = balanceOf(
+        uint256 withdrawAmount = _balances[
             msg.sender
-        );
+        ];
 
         poolWithdraw(
             withdrawAmount
@@ -317,8 +317,8 @@ contract SimpleFarm is TokenWrapper {
         updatePool()
     {
         require(
-            totalSupply() > 0,
-            "SimpleFarm: NO_SUPPLY"
+            _totalStaked > 0,
+            "SimpleFarm: NO_STAKERS"
         );
 
         require(
