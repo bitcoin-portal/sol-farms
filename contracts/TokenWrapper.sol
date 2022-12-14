@@ -6,11 +6,11 @@ import "./SafeERC20.sol";
 
 contract TokenWrapper is SafeERC20 {
 
-    uint256 private _totalStaked;
-    mapping(address => uint256) private _balances;
+    uint256 _totalStaked;
+    mapping(address => uint256) _balances;
 
     function totalSupply()
-        public
+        external
         view
         returns (uint256)
     {
@@ -20,7 +20,7 @@ contract TokenWrapper is SafeERC20 {
     function balanceOf(
         address _walletAddress
     )
-        public
+        external
         view
         returns (uint256)
     {
