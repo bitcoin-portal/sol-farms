@@ -293,13 +293,13 @@ contract SimpleFarm is TokenWrapper {
         onlyManager
     {
         require(
-            block.timestamp > periodFinished,
-            "SimpleFarm: ONGOING_DISTRIBUTION"
+            _rewardDuration > 0,
+            "SimpleFarm: INVALID_DURATION"
         );
 
         require(
-            _rewardDuration > 0,
-            "SimpleFarm: INVALID_DURATION"
+            block.timestamp > periodFinished,
+            "SimpleFarm: ONGOING_DISTRIBUTION"
         );
 
         rewardDuration = _rewardDuration;
