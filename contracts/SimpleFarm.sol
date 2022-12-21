@@ -80,6 +80,18 @@ contract SimpleFarm is TokenWrapper {
         uint256 newRewardDuration
     );
 
+    event OwnerProposed(
+        address proposedOwner
+    );
+
+    event OwnerChanged(
+        address newOwner
+    );
+
+    event ManagerChanged(
+        address newManager
+    );
+
     constructor(
         IERC20 _stakeToken,
         IERC20 _rewardToken
@@ -273,6 +285,10 @@ contract SimpleFarm is TokenWrapper {
         onlyOwner
     {
         proposedOwner = _newOwner;
+
+        emit OwnerProposed(
+            _newOwner
+        );
     }
 
     /**
@@ -287,6 +303,10 @@ contract SimpleFarm is TokenWrapper {
         );
 
         ownerAddress = proposedOwner;
+
+        emit OwnerChanged(
+            ownerAddress
+        );
     }
 
     /**
@@ -299,6 +319,10 @@ contract SimpleFarm is TokenWrapper {
         onlyOwner
     {
         managerAddress = _newManager;
+
+        emit ManagerChanged(
+            _newManager
+        );
     }
 
     /**
