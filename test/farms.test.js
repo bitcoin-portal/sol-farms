@@ -9,11 +9,9 @@ const BN = (value) => {
     return new _BN(value)
 }
 
-// TESTING PARAMETERS
-const ONE_TOKEN = web3.utils.toWei("1");
-const FOUR_ETH = web3.utils.toWei("3");
-const FIVE_ETH = web3.utils.toWei("5");
-const STATIC_SUPPLY = web3.utils.toWei("5000000");
+const tokens = (value) => {
+    return web3.utils.toWei(value);
+}
 
 const getLastEvent = async (eventName, instance) => {
     const events = await instance.getPastEvents(eventName, {
@@ -23,21 +21,22 @@ const getLastEvent = async (eventName, instance) => {
     return events.pop().returnValues;
 };
 
+
 contract("SimpleFarm", ([owner, alice, bob, random]) => {
 
-    beforeEach(async () => {
-        token = await Token.new();
-
-        stakeToken = await Token.new();
-        rewardToken = await Token.new();
-
-        farm = await Farm.new(
-            stakeToken.address,
-            rewardToken.address
-        );
-    });
-
     describe.only("Farm Initial Values", () => {
+
+        beforeEach(async () => {
+            token = await Token.new();
+
+            stakeToken = await Token.new();
+            rewardToken = await Token.new();
+
+            farm = await Farm.new(
+                stakeToken.address,
+                rewardToken.address
+            );
+        });
 
         it("should have correct farm name", async () => {
             const name = await farm.name();
@@ -63,7 +62,6 @@ contract("SimpleFarm", ([owner, alice, bob, random]) => {
             );
         });
 
-
         it("should have correct farm supply", async () => {
             const supply = await farm.totalSupply();
             assert.equal(
@@ -72,22 +70,15 @@ contract("SimpleFarm", ([owner, alice, bob, random]) => {
             );
         });
 
-        it.skip("should return receipt balance for the given account", async () => {
+        it("should return receipt balance for the given account", async () => {
 
-            const expectedAmount = ONE_TOKEN;
-            await farm.transfer(
-                bob,
-                expectedAmount,
-                {
-                    from: owner
-                }
+            const balance = await farm.balanceOf(
+                owner
             );
-
-            const balance = await farm.balanceOf(bob);
 
             assert.equal(
                 balance,
-                expectedAmount
+                0
             );
         });
 
@@ -101,6 +92,46 @@ contract("SimpleFarm", ([owner, alice, bob, random]) => {
             assert.equal(
                 allowance,
                 0
+            );
+        });
+
+        it("should have correct staking token address", async () => {
+
+            const stakeTokenValue = await farm.stakeToken();
+
+            assert.equal(
+                stakeTokenValue,
+                stakeToken.address
+            );
+        });
+
+        it("should have correct reward token address", async () => {
+
+            const rewardTokenValue = await farm.rewardToken();
+
+            assert.equal(
+                rewardTokenValue,
+                rewardToken.address
+            );
+        });
+
+        it("should have correct owner address", async () => {
+
+            const ownerAddress = await farm.ownerAddress();
+
+            assert.equal(
+                ownerAddress,
+                owner
+            );
+        });
+
+        it("should have correct manager address", async () => {
+
+            const managerAddress = await farm.managerAddress();
+
+            assert.equal(
+                managerAddress,
+                owner
             );
         });
     });
@@ -543,7 +574,7 @@ contract("SimpleFarm", ([owner, alice, bob, random]) => {
         });
 
     });
-    
+
     describe("Burn Functionality", () => {
 
         it("should reduce the balance of the wallet thats burnng the tokens", async () => {
