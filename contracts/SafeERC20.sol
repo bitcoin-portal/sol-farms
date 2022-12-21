@@ -6,6 +6,9 @@ import "./IERC20.sol";
 
 contract SafeERC20 {
 
+    /**
+     * @dev Allows to execute transfer for a token
+     */
     function safeTransfer(
         IERC20 _token,
         address _to,
@@ -23,6 +26,9 @@ contract SafeERC20 {
         );
     }
 
+    /**
+     * @dev Allows to execute transferFrom for a token
+     */
     function safeTransferFrom(
         IERC20 _token,
         address _from,

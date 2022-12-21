@@ -21,6 +21,7 @@ contract SimpleFarm is TokenWrapper {
     mapping(address => uint256) public perTokenPaid;
 
     address public ownerAddress;
+    address public proposedOwner;
     address public managerAddress;
 
     modifier onlyOwner() {
@@ -39,7 +40,7 @@ contract SimpleFarm is TokenWrapper {
         _;
     }
 
-    modifier updatePool() {
+    modifier updateFarm() {
         perTokenStored = rewardPerToken();
         lastUpdateTime = lastTimeRewardApplicable();
         _;
@@ -90,6 +91,9 @@ contract SimpleFarm is TokenWrapper {
         managerAddress = msg.sender;
     }
 
+    /**
+     * @dev Tracks timestamp for when reward was applied last time
+     */
     function lastTimeRewardApplicable()
         public
         view
@@ -100,6 +104,9 @@ contract SimpleFarm is TokenWrapper {
             : periodFinished;
     }
 
+    /**
+     * @dev Relative value on reward for single staked token
+     */
     function rewardPerToken()
         public
         view
@@ -121,6 +128,9 @@ contract SimpleFarm is TokenWrapper {
             + extraFund;
     }
 
+    /**
+     * @dev Reports earned amount by wallt address not yet collected
+     */
     function earned(
         address _walletAddress
     )
@@ -137,11 +147,14 @@ contract SimpleFarm is TokenWrapper {
             + userRewards[_walletAddress];
     }
 
-    function poolDeposit(
+    /**
+     * @dev Performs deposit of staked token into the farm
+     */
+    function farmDeposit(
         uint256 _stakeAmount
     )
         external
-        updatePool()
+        updateFarm()
         updateUser()
     {
         address senderAddress = msg.sender;
@@ -164,11 +177,14 @@ contract SimpleFarm is TokenWrapper {
         );
     }
 
-    function poolWithdraw(
+    /**
+     * @dev Performs withdrawal of staked token from the farm
+     */
+    function farmWithdraw(
         uint256 _withdrawAmount
     )
         public
-        updatePool()
+        updateFarm()
         updateUser()
     {
         if (block.timestamp < periodFinished) {
@@ -197,23 +213,29 @@ contract SimpleFarm is TokenWrapper {
         );
     }
 
-    function exitPool()
+    /**
+     * @dev Allows to withdraw staked tokens and claim rewards
+     */
+    function exitFarm()
         external
     {
         uint256 withdrawAmount = _balances[
             msg.sender
         ];
 
-        poolWithdraw(
+        farmWithdraw(
             withdrawAmount
         );
 
-        getReward();
+        claimReward();
     }
 
-    function getReward()
+    /**
+     * @dev Allows to claim accumulated reward by staker so far
+     */
+    function claimReward()
         public
-        updatePool()
+        updateFarm()
         updateUser()
         returns (uint256 rewardAmount)
     {
@@ -241,15 +263,35 @@ contract SimpleFarm is TokenWrapper {
         );
     }
 
-    function changeOwner(
+    /**
+     * @dev Allows to invoke owner-change procedure
+     */
+    function proposeNewOwner(
         address _newOwner
     )
         external
         onlyOwner
     {
-        ownerAddress = _newOwner;
+        proposedOwner = _newOwner;
     }
 
+    /**
+     * @dev Finalizes owner-change 2-step procedure
+     */
+    function claimOwnership()
+        external
+    {
+        require(
+            msg.sender == proposedOwner,
+            "SimpleFarm: INVALID_CANDIDATE"
+        );
+
+        ownerAddress = proposedOwner;
+    }
+
+    /**
+     * @dev Allows to change manager of the farm
+     */
     function changeManager(
         address _newManager
     )
@@ -259,6 +301,10 @@ contract SimpleFarm is TokenWrapper {
         managerAddress = _newManager;
     }
 
+    /**
+     * @dev Allows to recover accidentally sent tokens
+     * into the farm except stake and reward tokens
+     */
     function recoverToken(
         IERC20 tokenAddress,
         uint256 tokenAmount
@@ -286,6 +332,10 @@ contract SimpleFarm is TokenWrapper {
         );
     }
 
+    /**
+     * @dev Manager sets the cycle duration for distribution
+     * in seconds and can't be changed during active cycle
+     */
     function setRewardDuration(
         uint256 _rewardDuration
     )
@@ -309,12 +359,16 @@ contract SimpleFarm is TokenWrapper {
         );
     }
 
+    /**
+     * @dev Manager sets reward per second to be distributed
+     * must have some tokens already staked before executing.
+     */
     function setRewardRate(
         uint256 _newRewardRate
     )
         external
         onlyManager
-        updatePool()
+        updateFarm()
     {
         require(
             _totalStaked > 0,

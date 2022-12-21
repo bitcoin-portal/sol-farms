@@ -27,6 +27,9 @@ contract TokenWrapper is SafeERC20 {
         uint256 value
     );
 
+    /**
+     * @dev Returns total amount of staked tokens
+     */
     function totalSupply()
         external
         view
@@ -35,6 +38,9 @@ contract TokenWrapper is SafeERC20 {
         return _totalStaked;
     }
 
+    /**
+     * @dev Returns staked amount by wallet address
+     */
     function balanceOf(
         address _walletAddress
     )
@@ -45,6 +51,9 @@ contract TokenWrapper is SafeERC20 {
         return _balances[_walletAddress];
     }
 
+    /**
+     * @dev Increases staked amount by wallet address
+     */
     function _stake(
         uint256 _amount,
         address _address
@@ -60,6 +69,9 @@ contract TokenWrapper is SafeERC20 {
         }
     }
 
+    /**
+     * @dev Decreases total staked amount
+     */
     function _withdraw(
         uint256 _amount,
         address _address
@@ -75,6 +87,9 @@ contract TokenWrapper is SafeERC20 {
         _balances[_address] - _amount;
     }
 
+    /**
+     * @dev Allows to transfer receipt tokens
+     */
     function transfer(
         address _recipient,
         uint256 _amount
@@ -91,6 +106,9 @@ contract TokenWrapper is SafeERC20 {
         return true;
     }
 
+    /**
+     * @dev Updates balances during transfer
+     */
     function _transfer(
         address _sender,
         address _recipient,
@@ -113,6 +131,9 @@ contract TokenWrapper is SafeERC20 {
         );
     }
 
+    /**
+     * @dev Allows to transfer receipt tokens on owner's behalf
+     */
     function transferFrom(
         address _sender,
         address _recipient,
@@ -134,6 +155,9 @@ contract TokenWrapper is SafeERC20 {
         return true;
     }
 
+    /**
+     * @dev Grants permission for receipt tokens transfer on owner's behalf
+     */
     function approve(
         address _spender,
         uint256 _amount
@@ -150,6 +174,9 @@ contract TokenWrapper is SafeERC20 {
         return true;
     }
 
+    /**
+     * @dev Checks value for receipt tokens transfer on owner's behalf
+     */
     function allowance(
         address _owner,
         address _spender
@@ -161,6 +188,9 @@ contract TokenWrapper is SafeERC20 {
         return _allowances[_owner][_spender];
     }
 
+    /**
+     * @dev Allowance update for receipt tokens transfer on owner's behalf
+     */
     function _approve(
         address _owner,
         address _spender,
@@ -177,6 +207,9 @@ contract TokenWrapper is SafeERC20 {
         );
     }
 
+    /**
+     * @dev Increases value for receipt tokens transfer on owner's behalf
+     */
     function increaseAllowance(
         address _spender,
         uint256 _addedValue
@@ -193,6 +226,9 @@ contract TokenWrapper is SafeERC20 {
         return true;
     }
 
+    /**
+     * @dev Decreases value for receipt tokens transfer on owner's behalf
+     */
     function decreaseAllowance(
         address _spender,
         uint256 _subtractedValue
