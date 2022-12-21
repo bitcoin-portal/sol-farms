@@ -136,70 +136,7 @@ contract("SimpleFarm", ([owner, alice, bob, random]) => {
         });
     });
 
-    describe("Token Initial Values", () => {
-
-        it("should have correct token name", async () => {
-            const name = await token.name();
-            assert.equal(
-                name,
-                "TestToken"
-            );
-        });
-
-        it("should have correct token symbol", async () => {
-            const symbol = await token.symbol();
-            assert.equal(
-                symbol,
-                "T-TKN"
-            );
-        });
-
-        it("should have correct token decimals", async () => {
-            const decimals = await token.decimals();
-            assert.equal(
-                decimals,
-                18
-            );
-        });
-
-
-        it("should have correct token supply", async () => {
-            const supply = await token.totalSupply();
-            assert.equal(
-                supply,
-                9e+33
-            );
-        });
-
-        it("should return the correct balance for the given account", async () => {
-            const expectedAmount = ONE_TOKEN;
-
-            await token.transfer(
-                bob,
-                expectedAmount,
-                {
-                    from: owner
-                }
-            );
-
-            const balance = await token.balanceOf(bob);
-
-            assert.equal(
-                balance,
-                expectedAmount
-            );
-        });
-
-        it("should return the correct allowance for the given spender", async () => {
-            const allowance = await token.allowance(owner, bob);
-            assert.equal(
-                allowance,
-                0
-            );
-        });
-    });
-
-    describe("Token Transfer Functionality", () => {
+    describe("Receipt Token Transfer Functionality", () => {
 
         it("should transfer correct amount from walletA to walletB", async () => {
 
@@ -379,7 +316,7 @@ contract("SimpleFarm", ([owner, alice, bob, random]) => {
         });
     });
 
-    describe("Token Approval Functionality", () => {
+    describe("Receipt Token Approval Functionality", () => {
 
         it("should assign value to allowance mapping", async () => {
 
@@ -467,26 +404,30 @@ contract("SimpleFarm", ([owner, alice, bob, random]) => {
         });
     });
 
-    describe("Mint Functionality", () => {
+    describe("Deposit Functionality", () => {
 
-        it("should increase the balance of the wallet thats minting the tokens", async () => {
+        it("should increase the balance of the wallet thats deposits the tokens", async () => {
 
-            const mintAmount = ONE_TOKEN;
-            const supplyBefore = await token.balanceOf(owner);
+            const depositAmount = tokens("1");
 
-            await token.mint(
-                mintAmount,
+            const supplyBefore = await token.balanceOf(
+                owner
+            );
+
+            await farm.farmDeposit(
+                depositAmount,
                 {
                     from: owner
                 }
-
             );
 
-            const supplyAfter = await token.balanceOf(owner);
+            const supplyAfter = await token.balanceOf(
+                owner
+            );
 
             assert.equal(
                 parseInt(supplyAfter),
-                parseInt(supplyBefore) + parseInt(mintAmount)
+                parseInt(supplyBefore) + parseInt(depositAmount)
             );
         });
 
@@ -575,7 +516,7 @@ contract("SimpleFarm", ([owner, alice, bob, random]) => {
 
     });
 
-    describe("Burn Functionality", () => {
+    describe("Witharaw Functionality", () => {
 
         it("should reduce the balance of the wallet thats burnng the tokens", async () => {
 
