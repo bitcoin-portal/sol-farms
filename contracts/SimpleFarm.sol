@@ -149,7 +149,7 @@ contract SimpleFarm is TokenWrapper {
     }
 
     /**
-     * @dev Reports earned amount by wallt address not yet collected
+     * @dev Reports earned amount by wallet address not yet collected
      */
     function earned(
         address _walletAddress
