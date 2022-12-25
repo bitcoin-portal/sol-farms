@@ -375,6 +375,24 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             farm = result.farm;
         });
 
+        it("should not be able to set rate to 0", async () => {
+
+            await farm.farmDeposit(
+                ONE_TOKEN
+            );
+
+            await expectRevert(
+                farm.setRewardRate(
+                    0
+                ),
+                "SimpleFarm: INVALID_RATE"
+            );
+
+            await farm.setRewardRate(
+                1
+            );
+        });
+
         it("should correctly set the periodFinished date value", async () => {
 
             const initialPeriod = await farm.periodFinished();
@@ -1353,8 +1371,8 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
                 owner
             );
 
-            assert.equal(
-                earnedStep1,
+            assert.isAtLeast(
+                parseInt(earnedStep1),
                 earnPerStep * 1
             );
 
@@ -1366,8 +1384,8 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
                 owner
             );
 
-            assert.equal(
-                earnedStep2,
+            assert.isAtLeast(
+                parseInt(earnedStep2),
                 earnPerStep * 2
             );
         });
@@ -1618,6 +1636,60 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
                 totalSupply,
                 supplyBefore - burnAmount
             );
+        });
+    });
+
+    describe.only("Recover token functionality", () => {
+
+        beforeEach(async () => {
+
+            const result = await setupScenario();
+
+            randomToken = await Token.new();
+            stakeToken = result.stakeToken;
+            rewardToken = result.rewardToken;
+            farm = result.farm;
+        });
+
+        it("should be able to recover accidentally sent tokens from the contract", async () => {
+
+            const transferAmount = ONE_TOKEN;
+
+            await randomToken.transfer(
+                farm.address,
+                transferAmount
+            );
+
+            const balanceBefore = await randomToken.balanceOf(
+                farm.address
+            );
+
+            assert.equal(
+                balanceBefore,
+                transferAmount
+            );
+
+            await farm.recoverToken(
+                randomToken.address,
+                balanceBefore
+            );
+
+            const balanceAfter = await randomToken.balanceOf(
+                farm.address
+            );
+
+            assert.equal(
+                balanceAfter.toString(),
+                "0"
+            );
+        });
+
+        it("should not be able to recover stakeTokens from the contract", async () => {
+
+        });
+
+        it("should not be able to recover rewardTokens from the contract", async () => {
+
         });
     });
 });
