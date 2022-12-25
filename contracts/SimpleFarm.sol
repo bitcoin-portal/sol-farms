@@ -94,13 +94,21 @@ contract SimpleFarm is TokenWrapper {
 
     constructor(
         IERC20 _stakeToken,
-        IERC20 _rewardToken
+        IERC20 _rewardToken,
+        uint256 _defaultDuration
     ) {
+        require(
+            _defaultDuration > 0,
+            "SimpleFarm: INVALID_DURATION"
+        );
+
         stakeToken = _stakeToken;
         rewardToken = _rewardToken;
 
         ownerAddress = msg.sender;
         managerAddress = msg.sender;
+
+        rewardDuration = _defaultDuration;
     }
 
     /**

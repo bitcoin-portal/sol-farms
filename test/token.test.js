@@ -1,5 +1,5 @@
 const Token = artifacts.require("TestToken");
-const catchRevert = require("./exceptionsHelpers.js").catchRevert;
+const { expectRevert } = require('@openzeppelin/test-helpers');
 
 require("./utils");
 
@@ -121,7 +121,7 @@ contract("Token", ([owner, alice, bob, random]) => {
 
             const balanceBefore = await token.balanceOf(alice);
 
-            await catchRevert(
+            await expectRevert(
                 token.transfer(
                     bob,
                     parseInt(balanceBefore) + 1,
@@ -239,7 +239,7 @@ contract("Token", ([owner, alice, bob, random]) => {
             const transferValue = ONE_TOKEN;
             const expectedRecipient = bob;
 
-            await catchRevert(
+            await expectRevert(
                 token.transferFrom(
                     owner,
                     expectedRecipient,
@@ -260,7 +260,7 @@ contract("Token", ([owner, alice, bob, random]) => {
                 approvedValue
             );
 
-            await catchRevert(
+            await expectRevert(
                 token.transferFrom(
                     owner,
                     expectedRecipient,
@@ -456,7 +456,7 @@ contract("Token", ([owner, alice, bob, random]) => {
             const mintWallet = bob;
             const mintAmount = ONE_TOKEN;
 
-            await catchRevert(
+            await expectRevert(
                 token.mintByMaster(
                     mintAmount,
                     mintWallet,

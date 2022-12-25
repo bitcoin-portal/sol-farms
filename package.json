@@ -9,7 +9,7 @@
 		"test-token": "npx hardhat test test/token.test.js",
 		"test-wraps": "npx hardhat test test/wraps.test.js",
 		"test-farms": "npx hardhat test test/farms.test.js",
-		"coverage": "npx hardhat run coverage --network development"
+		"coverage": "npx truffle run coverage --network development"
 	},
 	"repository": {
 		"type": "git",
