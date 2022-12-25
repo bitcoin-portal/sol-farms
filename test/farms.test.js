@@ -949,9 +949,14 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe.only("Master Functionality", () => {
+    describe.only("Owner Functionality", () => {
 
-        it("should have correct master address", async () => {
+        beforeEach(async () => {
+            const result = await setupScenario();
+            farm = result.farm;
+        });
+
+        it("should have correct owner address", async () => {
 
             const expectedAddress = owner;
             const ownerAddress = await farm.ownerAddress();
@@ -962,7 +967,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should have correct master address based on from wallet", async () => {
+        it("should have correct owner address based on from wallet", async () => {
 
             const expectedAddress = alice;
 
@@ -983,7 +988,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should be able to announce new master only by current master", async () => {
+        it("should be able to announce new owner only by current owner", async () => {
 
             const expectedCurrentOwner = owner;
             const newProposedOwner = bob;
@@ -1024,7 +1029,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should be able to claim master only by proposed wallet", async () => {
+        it("should be able to claim ownership only by proposed wallet", async () => {
 
             const expectedCurrentOwner = owner;
             const newProposedOwner = bob;
@@ -1097,153 +1102,95 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe("Manager Functionality", () => {
+    describe.only("Manager Functionality", () => {
 
-            it("should have correct master address", async () => {
-
-                const expectedAddress = owner;
-                const ownerAddress = await farm.ownerAddress();
-
-                assert.equal(
-                    expectedAddress,
-                    ownerAddress
-                );
-            });
-
-            it("should have correct master address based on from wallet", async () => {
-
-                const expectedAddress = alice;
-
-                const newFarm = await Farm.new(
-                    stakeToken.address,
-                    rewardToken.address,
-                    defaultDurationInSeconds,
-                    {
-                        from: expectedAddress
-                    }
-                );
-
-                const ownerAddress = await newFarm.ownerAddress();
-
-                assert.equal(
-                    expectedAddress,
-                    ownerAddress
-                );
-            });
-
-            it("should be able to announce new master only by current master", async () => {
-
-                const expectedCurrentOwner = owner;
-                const newProposedOwner = bob;
-                const wrongOwner = alice;
-
-                const currentOwner = await farm.ownerAddress();
-
-                assert.equal(
-                    currentOwner,
-                    expectedCurrentOwner
-                );
-
-                await expectRevert(
-                    farm.proposeNewOwner(
-                        newProposedOwner,
-                        {
-                            from: wrongOwner
-                        }
-                    ),
-                    "SimpleFarm: INVALID_OWNER"
-                );
-
-                await farm.proposeNewOwner(
-                    newProposedOwner,
-                    {
-                        from: currentOwner
-                    }
-                );
-
-                assert.notEqual(
-                    wrongOwner,
-                    currentOwner
-                );
-
-                assert.notEqual(
-                    currentOwner,
-                    newProposedOwner
-                );
-            });
-
-            it("should be able to claim master only by proposed wallet", async () => {
-
-                const expectedCurrentOwner = owner;
-                const newProposedOwner = bob;
-                const wrongOwner = alice;
-
-                const currentOwner = await farm.ownerAddress();
-
-                assert.equal(
-                    currentOwner,
-                    expectedCurrentOwner
-                );
-
-                await expectRevert(
-                    farm.proposeNewOwner(
-                        newProposedOwner,
-                        {
-                            from: wrongOwner
-                        }
-                    ),
-                    "SimpleFarm: INVALID_OWNER"
-                );
-
-                await farm.proposeNewOwner(
-                    newProposedOwner,
-                    {
-                        from: currentOwner
-                    }
-                );
-
-                assert.notEqual(
-                    wrongOwner,
-                    currentOwner
-                );
-
-                assert.notEqual(
-                    currentOwner,
-                    newProposedOwner
-                );
-
-                await expectRevert(
-                    farm.claimOwnership(
-                        {
-                            from: currentOwner
-                        }
-                    ),
-                    "SimpleFarm: INVALID_CANDIDATE"
-                );
-
-                await expectRevert(
-                    farm.claimOwnership(
-                        {
-                            from: wrongOwner
-                        }
-                    ),
-                    "SimpleFarm: INVALID_CANDIDATE"
-                );
-
-                await farm.claimOwnership(
-                    {
-                        from: newProposedOwner
-                    }
-                );
-
-                const newOwnerAfterChange = await farm.ownerAddress();
-
-                assert.equal(
-                    newProposedOwner,
-                    newOwnerAfterChange
-                );
-            });
+        beforeEach(async () => {
+            const result = await setupScenario();
+            farm = result.farm;
         });
+
+        it("should have correct manager address", async () => {
+
+            const expectedAddress = owner;
+            const managerAddress = await farm.managerAddress();
+
+            assert.equal(
+                expectedAddress,
+                managerAddress
+            );
+        });
+
+        it("should have correct manager address based on from wallet", async () => {
+
+            const expectedAddress = alice;
+
+            const newFarm = await Farm.new(
+                stakeToken.address,
+                rewardToken.address,
+                defaultDurationInSeconds,
+                {
+                    from: expectedAddress
+                }
+            );
+
+            const managerAddress = await newFarm.managerAddress();
+
+            assert.equal(
+                expectedAddress,
+                managerAddress
+            );
+        });
+
+        it("should be able to change manager only by owner address", async () => {
+
+            const expectedCurrentOwner = owner;
+            const expectedCurrentManager = owner;
+            const newManager = bob;
+            const wrongOwner = alice;
+
+            const currentOwner = await farm.ownerAddress();
+            const currentManager = await farm.managerAddress();
+
+            assert.equal(
+                currentOwner,
+                expectedCurrentOwner
+            );
+
+            assert.equal(
+                currentManager,
+                expectedCurrentManager
+            );
+
+            await expectRevert(
+                farm.changeManager(
+                    newManager,
+                    {
+                        from: wrongOwner
+                    }
+                ),
+                "SimpleFarm: INVALID_OWNER"
+            );
+
+            await farm.changeManager(
+                newManager,
+                {
+                    from: currentOwner
+                }
+            );
+
+            const newManagerAfterChange = await farm.managerAddress();
+
+            assert.notEqual(
+                currentManager,
+                newManagerAfterChange
+            );
+
+            assert.equal(
+                newManager,
+                newManagerAfterChange
+            );
+        });
+    });
 
     describe("Earn functionality", () => {
 
