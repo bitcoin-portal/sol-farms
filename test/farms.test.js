@@ -176,6 +176,17 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
+        it("should have correct perTokenStored value", async () => {
+
+            const perTokenStored = await farm.perTokenStored();
+            const expectedDefaultValue = 0;
+
+            assert.equal(
+                perTokenStored,
+                expectedDefaultValue
+            );
+        });
+
         it("should have correct duration value", async () => {
 
             const defaultDurationValue = await farm.rewardDuration();
@@ -185,6 +196,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
                 defaultDurationInSeconds
             );
         });
+
 
         it("should not be able to deploy with wrong default duration value", async () => {
 
@@ -394,6 +406,66 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             assert.equal(
                 parseInt(valueAfterChange),
                 parseInt(initialTimestamp) + parseInt(expectedDuration)
+            );
+        });
+
+        it("should increase perTokenStored value", async () => {
+
+            const perTokenStoredDefault = await farm.perTokenStored();
+            const expectedDefaultValue = 0;
+            const initialRate = 10;
+
+            assert.equal(
+                perTokenStoredDefault,
+                expectedDefaultValue
+            );
+
+            await farm.farmDeposit(
+                ONE_TOKEN
+            );
+
+            await farm.setRewardRate(
+                initialRate
+            );
+
+            await time.increase(
+                1
+            );
+
+            await farm.farmDeposit(
+                ONE_TOKEN
+            );
+
+            const perTokenStoredNew = await farm.perTokenStored();
+
+            assert.isAbove(
+                parseInt(perTokenStoredNew),
+                parseInt(perTokenStoredDefault)
+            );
+        });
+
+        it("should emit correct RewardAdded event", async () => {
+
+            const initialRate = 10;
+            const rewardDuration = await farm.rewardDuration();
+            const expectedAmount = rewardDuration * initialRate;
+
+            await farm.farmDeposit(
+                ONE_TOKEN
+            );
+
+            await farm.setRewardRate(
+                initialRate
+            );
+
+            const rewardEvent = await getLastEvent(
+                "RewardAdded",
+                farm
+            );
+
+            assert.equal(
+                expectedAmount,
+                rewardEvent.tokenAmount
             );
         });
 
@@ -679,7 +751,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe.only("Receipt Token Transfer Functionality", () => {
+    describe.only("Receipt token transfer functionality", () => {
 
         beforeEach(async () => {
 
@@ -949,7 +1021,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe.only("Owner Functionality", () => {
+    describe.only("Owner functionality", () => {
 
         beforeEach(async () => {
             const result = await setupScenario();
@@ -967,7 +1039,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should have correct owner address based on from wallet", async () => {
+        it("should have correct owner address based on deployment wallet", async () => {
 
             const expectedAddress = alice;
 
@@ -1102,7 +1174,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe.only("Manager Functionality", () => {
+    describe.only("Manager functionality", () => {
 
         beforeEach(async () => {
             const result = await setupScenario();
@@ -1120,7 +1192,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should have correct manager address based on from wallet", async () => {
+        it("should have correct manager address based on deployment wallet", async () => {
 
             const expectedAddress = alice;
 
@@ -1190,9 +1262,35 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
                 newManagerAfterChange
             );
         });
+
+        it("should emit correct ManagerChanged event", async () => {
+
+            const newManager = bob;
+
+            await farm.changeManager(
+                newManager
+            );
+
+            const newManagerAfterChange = await farm.managerAddress();
+
+            assert.equal(
+                newManager,
+                newManagerAfterChange
+            );
+
+            const transactionData = await getLastEvent(
+                "ManagerChanged",
+                farm
+            );
+
+            assert.equal(
+                transactionData.newManager,
+                newManagerAfterChange
+            );
+        });
     });
 
-    describe("Earn functionality", () => {
+    describe.only("Earn functionality", () => {
 
         beforeEach(async () => {
 
@@ -1205,55 +1303,226 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             farm = result.farm;
 
             defaultTokenAmount = TWO_TOKENS;
+            defaultRewardRate = 10;
 
             await farm.farmDeposit(
                 defaultTokenAmount
             );
 
+            await stakeToken.mint(
+                defaultTokenAmount,
+                {
+                    from: bob
+                }
+            );
+
+            await stakeToken.approve(
+                farm.address,
+                defaultTokenAmount,
+                {
+                    from: bob
+                }
+            );
+        });
+
+        it("should earn rewards proportionally to stake time", async () => {
+
             await farm.setRewardRate(
+                defaultRewardRate
+            );
 
+            const stepTimeFrame = 1;
+            const expectedDefaultEarn = 0;
+            const rewardRate = await farm.rewardRate();
+            const earnPerStep = stepTimeFrame * rewardRate;
+
+            const earnedInital = await farm.earned(
+                owner
+            );
+
+            assert.equal(
+                parseInt(earnedInital),
+                parseInt(expectedDefaultEarn)
+            );
+
+            await time.increase(
+                stepTimeFrame
+            );
+
+            const earnedStep1 = await farm.earned(
+                owner
+            );
+
+            assert.equal(
+                earnedStep1,
+                earnPerStep * 1
+            );
+
+            await time.increase(
+                stepTimeFrame
+            );
+
+            const earnedStep2 = await farm.earned(
+                owner
+            );
+
+            assert.equal(
+                earnedStep2,
+                earnPerStep * 2
             );
         });
 
-        it("should reduce the balance of the wallet thats withdrawing the tokens", async () => {
+        it("should earn rewards proportionally to staked amount", async () => {
 
-            const burnAmount = ONE_TOKEN;
-            const supplyBefore = await token.balanceOf(owner);
-
-            await token.burn(
-                burnAmount,
+            await farm.farmDeposit(
+                defaultTokenAmount,
                 {
-                    from: owner
+                    from: bob
                 }
-
             );
 
-            const supplyAfter = await token.balanceOf(owner);
+            await farm.setRewardRate(
+                defaultRewardRate
+            );
+
+            const stepTimeFrame = 1;
+            const expectedDefaultEarn = 0;
+
+            const depositedByOwner = await farm.balanceOf(
+                owner
+            );
+
+            const depositedByBob = await farm.balanceOf(
+                bob
+            );
 
             assert.equal(
-                supplyAfter,
-                supplyBefore - burnAmount
+                depositedByOwner.toString(),
+                depositedByBob.toString()
+            );
+
+            const earnedInitalOwner = await farm.earned(
+                owner
+            );
+
+            const earnedInitalBob = await farm.earned(
+                owner
+            );
+
+            assert.equal(
+                earnedInitalOwner.toString(),
+                earnedInitalBob.toString()
+            );
+
+            await time.increase(
+                stepTimeFrame
+            );
+
+            const earnedOwnerStep1 = await farm.earned(
+                owner
+            );
+
+            const earnedBobStep1 = await farm.earned(
+                bob
+            );
+
+            assert.equal(
+                earnedOwnerStep1.toString(),
+                earnedBobStep1.toString()
+            );
+
+            await time.increase(
+                stepTimeFrame
+            );
+
+            const earnedOwnerStep2 = await farm.earned(
+                owner
+            );
+
+            const earnedBobStep2 = await farm.earned(
+                bob
+            );
+
+            assert.equal(
+                earnedOwnerStep2.toString(),
+                earnedBobStep2.toString()
+            );
+
+            assert.isAbove(
+                parseInt(earnedOwnerStep2),
+                parseInt(earnedOwnerStep1)
+            );
+
+            assert.isAbove(
+                parseInt(earnedBobStep2),
+                parseInt(earnedBobStep1)
             );
         });
 
-        it("should deduct the correct amount from the total supply", async () => {
+        it("should earn rewards proportionally to staked amount", async () => {
 
-            const supplyBefore = await token.balanceOf(owner);
-            const burnAmount = ONE_TOKEN;
-
-            await token.burn(
-                burnAmount,
+            await farm.farmDeposit(
+                ONE_TOKEN,
                 {
-                    from: owner
+                    from: bob
                 }
-
             );
 
-            const totalSupply = await token.totalSupply();
+            await farm.setRewardRate(
+                defaultRewardRate
+            );
+
+            const stepTimeFrame = 1;
+            const expectedDefaultEarn = 0;
+            const rewardRate = await farm.rewardRate();
+            const earnPerStep = stepTimeFrame * rewardRate;
+
+            const depositedByOwner = await farm.balanceOf(
+                owner
+            );
+
+            const depositedByBob = await farm.balanceOf(
+                bob
+            );
+
+            assert.isAbove(
+                parseInt(depositedByOwner),
+                parseInt(depositedByBob)
+            );
 
             assert.equal(
-                totalSupply,
-                supplyBefore - burnAmount
+                depositedByOwner,
+                depositedByBob * 2
+            );
+
+            const earnedInitalOwner = await farm.earned(
+                owner
+            );
+
+            const earnedInitalBob = await farm.earned(
+                owner
+            );
+
+            assert.equal(
+                earnedInitalOwner,
+                earnedInitalBob * 2
+            );
+
+            await time.increase(
+                stepTimeFrame
+            );
+
+            const earnedOwnerStep1 = await farm.earned(
+                owner
+            );
+
+            const earnedBobStep1 = await farm.earned(
+                bob
+            );
+
+            assert.equal(
+                earnedOwnerStep1,
+                earnedBobStep1 * 2
             );
         });
     });
@@ -1304,6 +1573,10 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
     });
 
     describe("Exit functionality", () => {
+
+        it("should not be able to exit as last farmer until rewards are still available", async () => {
+
+        });
 
         it("should reduce the balance of the wallet thats burnng the tokens", async () => {
 
