@@ -342,7 +342,6 @@ contract SimpleFarm is TokenWrapper {
         uint256 tokenAmount
     )
         external
-        onlyOwner
     {
         if (tokenAddress == stakeToken) {
             revert("SimpleFarm: INVALID_TOKEN");
