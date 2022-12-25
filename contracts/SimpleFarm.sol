@@ -416,14 +416,20 @@ contract SimpleFarm is TokenWrapper {
             "SimpleFarm: INVALID_DURATION"
         );
 
-        if (block.timestamp < periodFinished) {
+        uint256 currentPeriodFinish = periodFinished;
+
+        lastUpdateTime = block.timestamp;
+        periodFinished = block.timestamp
+            + rewardDuration;
+
+        if (block.timestamp < currentPeriodFinish) {
 
             require(
                 _newRewardRate >= rewardRate,
                 "SimpleFarm: RATE_CANT_DECREASE"
             );
 
-            uint256 remainingTime = periodFinished
+            uint256 remainingTime = currentPeriodFinish
                 - block.timestamp;
 
             uint256 rewardRemains = remainingTime
@@ -436,6 +442,8 @@ contract SimpleFarm is TokenWrapper {
             );
         }
 
+        rewardRate = _newRewardRate;
+
         uint256 newRewardAmount = rewardDuration
             * _newRewardRate;
 
@@ -445,12 +453,6 @@ contract SimpleFarm is TokenWrapper {
             address(this),
             newRewardAmount
         );
-
-        rewardRate = _newRewardRate;
-
-        lastUpdateTime = block.timestamp;
-        periodFinished = block.timestamp
-            + rewardDuration;
 
         emit RewardAdded(
             newRewardAmount
