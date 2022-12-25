@@ -411,11 +411,6 @@ contract SimpleFarm is TokenWrapper {
             "SimpleFarm: INVALID_RATE"
         );
 
-        require(
-            rewardDuration > 0,
-            "SimpleFarm: INVALID_DURATION"
-        );
-
         uint256 currentPeriodFinish = periodFinished;
 
         lastUpdateTime = block.timestamp;
