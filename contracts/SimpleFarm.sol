@@ -251,7 +251,7 @@ contract SimpleFarm is TokenWrapper {
     }
 
     /**
-     * @dev Allows to claim accumulated reward by staker so far
+     * @dev Allows to claim accumulated rewards up to date
      */
     function claimReward()
         public
@@ -265,9 +265,10 @@ contract SimpleFarm is TokenWrapper {
             senderAddress
         );
 
-        if (rewardAmount == 0) {
-            return 0;
-        }
+        require(
+            rewardAmount > 0,
+            "SimpleFarm: NOTHING_TO_CLAIM"
+        );
 
         userRewards[senderAddress] = 0;
 
