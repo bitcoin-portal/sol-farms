@@ -26,11 +26,12 @@ const getLastEvent = async (eventName, instance) => {
 
 contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
 
-    const setupScenario = async (approval) => {
+    const setupScenario = async (inputParams = {}) => {
 
         stakeToken = await Token.new();
         rewardToken = await Token.new();
 
+        defaultApprovalAmount = 100;
         defaultDurationInSeconds = 300;
 
         farm = await Farm.new(
@@ -39,10 +40,10 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             defaultDurationInSeconds
         );
 
-        if (approval) {
+        if (inputParams.approval) {
 
             const approvalAmount = tokens(
-                "100"
+                defaultApprovalAmount.toString()
             );
 
             await stakeToken.approve(
@@ -53,6 +54,18 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             await rewardToken.approve(
                 farm.address,
                 approvalAmount
+            );
+        }
+
+        if (inputParams.deposit) {
+            await farm.farmDeposit(
+                inputParams.deposit
+            );
+        }
+
+        if (inputParams.rate) {
+            await farm.setRewardRate(
+                inputParams.rate
             );
         }
 
@@ -187,6 +200,17 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
+        it("should have correct lastUpdateTime value", async () => {
+
+            const lastUpdateTime = await farm.lastUpdateTime();
+            const expectedDefaultValue = 0;
+
+            assert.equal(
+                lastUpdateTime,
+                expectedDefaultValue
+            );
+        });
+
         it("should have correct duration value", async () => {
 
             const defaultDurationValue = await farm.rewardDuration();
@@ -196,7 +220,6 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
                 defaultDurationInSeconds
             );
         });
-
 
         it("should not be able to deploy with wrong default duration value", async () => {
 
@@ -228,7 +251,9 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
     describe.only("Duration initial functionality", () => {
 
         beforeEach(async () => {
-            const result = await setupScenario();
+            const result = await setupScenario({
+                approval: true
+            });
             stakeToken = result.stakeToken;
             rewardToken = result.rewardToken;
             farm = result.farm;
@@ -331,7 +356,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should not be able to change farm duration value to 0 ", async () => {
+        it("should not be able to change farm duration value to 0", async () => {
 
             const defaultDuration = await farm.rewardDuration();
             const expectedDefaultDuration = defaultDurationInSeconds;
@@ -357,6 +382,48 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
 
             assert.isAbove(
                 newDurationRightValue,
+                newDurationWrongValue
+            );
+        });
+
+        it("should not be able to change farm duration during distribution", async () => {
+
+            const defaultDuration = await farm.rewardDuration();
+            const expectedDefaultDuration = defaultDurationInSeconds;
+            const newDurationWrongValue = 100;
+
+            assert.equal(
+                defaultDuration,
+                expectedDefaultDuration
+            );
+
+            await farm.farmDeposit(
+                10
+            );
+
+            await farm.setRewardRate(
+                10
+            );
+
+            await expectRevert(
+                farm.setRewardDuration(
+                    newDurationWrongValue
+                ),
+                "SimpleFarm: ONGOING_DISTRIBUTION"
+            );
+
+            await time.increase(
+                defaultDuration + 1
+            );
+
+            await farm.setRewardDuration(
+                newDurationWrongValue
+            );
+
+            const newDuration = await farm.rewardDuration();
+
+            assert.equal(
+                newDuration,
                 newDurationWrongValue
             );
         });
@@ -1037,6 +1104,62 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
                 supplyBefore - withdrawAmount
             );
         });
+
+        it("should not be able to withdraw as last farmer until rewards are still available", async () => {
+
+            await farm.farmDeposit(
+                defaultTokenAmount
+            );
+
+            await farm.setRewardRate(
+                10
+            );
+
+            const withdrawAccount = owner;
+
+            const possibleWithdraw = await farm.balanceOf(
+                withdrawAccount
+            );
+
+            await expectRevert(
+                farm.farmWithdraw(
+                    possibleWithdraw,
+                    {
+                        from: owner
+                    }
+                ),
+                "SimpleFarm: STILL_EARNING"
+            );
+
+            await stakeToken.mint(
+                defaultTokenAmount,
+                {
+                    from: bob
+                }
+            );
+
+            await stakeToken.approve(
+                farm.address,
+                defaultTokenAmount,
+                {
+                    from: bob
+                }
+            );
+
+            await farm.farmDeposit(
+                defaultTokenAmount,
+                {
+                    from: bob
+                }
+            );
+
+            await farm.farmWithdraw(
+                possibleWithdraw,
+                {
+                    from: owner
+                }
+            );
+        });
     });
 
     describe.only("Owner functionality", () => {
@@ -1187,6 +1310,44 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
 
             assert.equal(
                 newProposedOwner,
+                newOwnerAfterChange
+            );
+        });
+
+        it("should produce correct event during ownership change", async () => {
+
+            const expectedCurrentOwner = owner;
+            const newProposedOwner = bob;
+
+            const currentOwner = await farm.ownerAddress();
+
+            await farm.proposeNewOwner(
+                newProposedOwner,
+                {
+                    from: currentOwner
+                }
+            );
+
+            await farm.claimOwnership(
+                {
+                    from: newProposedOwner
+                }
+            );
+
+            const newOwnerAfterChange = await farm.ownerAddress();
+
+            assert.equal(
+                newProposedOwner,
+                newOwnerAfterChange
+            );
+
+            const eventData = await getLastEvent(
+                "OwnerChanged",
+                farm
+            );
+
+            assert.equal(
+                eventData.newOwner,
                 newOwnerAfterChange
             );
         });
@@ -1545,58 +1706,202 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe("Claim functionality", () => {
+    describe.only("Claim functionality", () => {
 
-        it("should reduce the balance of the wallet thats burnng the tokens", async () => {
+        beforeEach(async () => {
 
-            const burnAmount = ONE_TOKEN;
-            const supplyBefore = await token.balanceOf(owner);
+            defaultDeposit = tokens("1");
+            defaultRate = 10;
 
-            await token.burn(
-                burnAmount,
-                {
-                    from: owner
-                }
+            const result = await setupScenario({
+                approval: true,
+                deposit: defaultDeposit
+                // rate: defaultRate
+            });
 
+            stakeToken = result.stakeToken;
+            rewardToken = result.rewardToken;
+            farm = result.farm;
+        });
+
+        it("should reset userRewards mapping after claim to 0", async () => {
+
+            const stakerAddess = owner;
+
+            const userRewardsBeforeClaim = await farm.userRewards(
+                stakerAddess
             );
 
-            const supplyAfter = await token.balanceOf(owner);
+            const earnedFromStart = await farm.earned(
+                stakerAddess
+            );
 
             assert.equal(
-                supplyAfter,
-                supplyBefore - burnAmount
+                parseInt(earnedFromStart),
+                0
+            );
+
+            assert.equal(
+                parseInt(userRewardsBeforeClaim),
+                0
+            );
+
+            await farm.setRewardRate(
+                defaultRate
+            );
+
+            const timeJumpStep = 1;
+
+            await time.increase(
+                timeJumpStep
+            );
+
+            const earnedAfterStart = await farm.earned(
+                stakerAddess
+            );
+
+            assert.isAbove(
+                parseInt(earnedAfterStart),
+                0
+            );
+
+            await time.increase(
+                timeJumpStep
+            );
+
+            await farm.claimReward();
+
+            const userRewardsAfterClaim = await farm.userRewards(
+                stakerAddess
+            );
+
+            const earnAfterClaim = await farm.earned(
+                stakerAddess
+            );
+
+            assert.isBelow(
+                parseInt(earnAfterClaim),
+                parseInt(earnedAfterStart)
+            );
+
+            assert.equal(
+                parseInt(userRewardsAfterClaim),
+                0
+            );
+        });
+
+        it("should update lastUpdateTime value after claim", async () => {
+        });
+
+        it("should revert if nothing to claim", async () => {
+            const stakerAddess = owner;
+            const nonStakerAddress = bob;
+            const timeJumpStep = 1;
+
+            await farm.setRewardRate(
+                defaultRate,
+                {
+                    from: stakerAddess
+                }
+            );
+
+            await time.increase(
+                timeJumpStep
+            );
+
+            await expectRevert(
+                farm.claimReward(
+                    {
+                    from: nonStakerAddress
+                    }
+                ),
+                "SimpleFarm: NOTHING_TO_CLAIM"
             );
         });
 
         it("should deduct the correct amount from the total supply", async () => {
 
-            const supplyBefore = await token.balanceOf(owner);
-            const burnAmount = ONE_TOKEN;
-
-            await token.burn(
-                burnAmount,
-                {
-                    from: owner
-                }
-
-            );
-
-            const totalSupply = await token.totalSupply();
-
-            assert.equal(
-                totalSupply,
-                supplyBefore - burnAmount
-            );
         });
     });
 
-    describe("Exit functionality", () => {
+    describe.only("Exit functionality", () => {
+
+        beforeEach(async () => {
+
+            const result = await setupScenario({
+                approval: true
+            });
+
+            stakeToken = result.stakeToken;
+            rewardToken = result.rewardToken;
+            farm = result.farm;
+
+            defaultTokenAmount = TWO_TOKENS;
+
+            await farm.farmDeposit(
+                defaultTokenAmount
+            );
+        });
 
         it("should not be able to exit as last farmer until rewards are still available", async () => {
 
+            await farm.farmDeposit(
+                defaultTokenAmount
+            );
+
+            await farm.setRewardRate(
+                10
+            );
+
+            const withdrawAccount = owner;
+
+            const possibleWithdraw = await farm.balanceOf(
+                withdrawAccount
+            );
+
+            await expectRevert(
+                farm.exitFarm(
+                    {
+                        from: owner
+                    }
+                ),
+                "SimpleFarm: STILL_EARNING"
+            );
+
+            await stakeToken.mint(
+                defaultTokenAmount,
+                {
+                    from: bob
+                }
+            );
+
+            await stakeToken.approve(
+                farm.address,
+                defaultTokenAmount,
+                {
+                    from: bob
+                }
+            );
+
+            await farm.farmDeposit(
+                defaultTokenAmount,
+                {
+                    from: bob
+                }
+            );
+
+            await time.increase(
+                1
+            );
+
+            await farm.exitFarm(
+                {
+                    from: withdrawAccount
+                }
+            );
         });
 
-        it("should reduce the balance of the wallet thats burnng the tokens", async () => {
+        it.skip("should reduce the balance of the wallet thats burnng the tokens", async () => {
 
             const burnAmount = ONE_TOKEN;
             const supplyBefore = await token.balanceOf(owner);
@@ -1617,25 +1922,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should deduct the correct amount from the total supply", async () => {
-
-            const supplyBefore = await token.balanceOf(owner);
-            const burnAmount = ONE_TOKEN;
-
-            await token.burn(
-                burnAmount,
-                {
-                    from: owner
-                }
-
-            );
-
-            const totalSupply = await token.totalSupply();
-
-            assert.equal(
-                totalSupply,
-                supplyBefore - burnAmount
-            );
+        it.skip("should not be able to exit if nothing to claim", async () => {
         });
     });
 
@@ -1686,10 +1973,38 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
 
         it("should not be able to recover stakeTokens from the contract", async () => {
 
+            const transferAmount = ONE_TOKEN;
+
+            await rewardToken.transfer(
+                farm.address,
+                transferAmount
+            );
+
+            await expectRevert(
+                farm.recoverToken(
+                    rewardToken.address,
+                    transferAmount
+                ),
+                "SimpleFarm: INVALID_TOKEN"
+            );
         });
 
         it("should not be able to recover rewardTokens from the contract", async () => {
 
+            const transferAmount = ONE_TOKEN;
+
+            await stakeToken.transfer(
+                farm.address,
+                transferAmount
+            );
+
+            await expectRevert(
+                farm.recoverToken(
+                    stakeToken.address,
+                    transferAmount
+                ),
+                "SimpleFarm: INVALID_TOKEN"
+            );
         });
     });
 });
