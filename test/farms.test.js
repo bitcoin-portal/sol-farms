@@ -1847,6 +1847,34 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
+        it("should not be able to exit until rewards are still available", async () => {
+
+            const withdrawAccount = owner;
+
+            const possibleWithdraw = await farm.balanceOf(
+                withdrawAccount
+            );
+
+            await expectRevert(
+                farm.exitFarm(
+                    {
+                        from: owner
+                    }
+                ),
+                "SimpleFarm: STILL_EARNING"
+            );
+
+            await time.increase(
+                defaultDurationInSeconds + 1
+            );
+
+            await farm.exitFarm(
+                {
+                    from: withdrawAccount
+                }
+            );
+        });
+
         it("should not be able to exit as last farmer until rewards are still available", async () => {
 
             const withdrawAccount = owner;
