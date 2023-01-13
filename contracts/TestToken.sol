@@ -9,11 +9,10 @@ contract TestToken {
     uint8 private _decimals = 18;
 
     address public master;
+    uint256 private _totalSupply;
 
     mapping (address => uint256) private _balances;
     mapping (address => mapping (address => uint256)) private _allowances;
-
-    uint256 private _totalSupply;
 
     event Transfer(
         address indexed from,

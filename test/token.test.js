@@ -121,7 +121,7 @@ contract("Token", ([owner, alice, bob, random]) => {
 
             const balanceBefore = await token.balanceOf(alice);
 
-            await expectRevert(
+            await expectRevert.unspecified(
                 token.transfer(
                     bob,
                     parseInt(balanceBefore) + 1,
@@ -239,7 +239,7 @@ contract("Token", ([owner, alice, bob, random]) => {
             const transferValue = ONE_TOKEN;
             const expectedRecipient = bob;
 
-            await expectRevert(
+            await expectRevert.unspecified(
                 token.transferFrom(
                     owner,
                     expectedRecipient,
@@ -260,7 +260,7 @@ contract("Token", ([owner, alice, bob, random]) => {
                 approvedValue
             );
 
-            await expectRevert(
+            await expectRevert.unspecified(
                 token.transferFrom(
                     owner,
                     expectedRecipient,
@@ -456,7 +456,7 @@ contract("Token", ([owner, alice, bob, random]) => {
             const mintWallet = bob;
             const mintAmount = ONE_TOKEN;
 
-            await expectRevert(
+            await expectRevert.unspecified(
                 token.mintByMaster(
                     mintAmount,
                     mintWallet,

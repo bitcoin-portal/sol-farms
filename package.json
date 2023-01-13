@@ -7,7 +7,6 @@
 		"compile": "hardhat compile",
 		"test": "npx hardhat test",
 		"test-token": "npx hardhat test test/token.test.js",
-		"test-wraps": "npx hardhat test test/wraps.test.js",
 		"test-farms": "npx hardhat test test/farms.test.js",
 		"coverage": "npx truffle run coverage --network development"
 	},
