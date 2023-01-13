@@ -76,7 +76,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         }
     }
 
-    describe.only("Farm initial values", () => {
+    describe("Farm initial values", () => {
 
         beforeEach(async () => {
             const result = await setupScenario();
@@ -248,7 +248,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe.only("Duration initial functionality", () => {
+    describe("Duration initial functionality", () => {
 
         beforeEach(async () => {
             const result = await setupScenario({
@@ -429,7 +429,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe.only("Reward allocation initial functionality by manager", () => {
+    describe("Reward allocation initial functionality by manager", () => {
 
         beforeEach(async () => {
 
@@ -735,7 +735,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe.only("Deposit initial functionality", () => {
+    describe("Deposit initial functionality", () => {
 
         beforeEach(async () => {
 
@@ -836,7 +836,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe.only("Receipt token transfer functionality", () => {
+    describe("Receipt token transfer functionality", () => {
 
         beforeEach(async () => {
 
@@ -1034,7 +1034,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe.only("Witharaw initial dunctionality", () => {
+    describe("Witharaw initial dunctionality", () => {
 
         beforeEach(async () => {
 
@@ -1162,7 +1162,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe.only("Owner functionality", () => {
+    describe("Owner functionality", () => {
 
         beforeEach(async () => {
             const result = await setupScenario();
@@ -1353,7 +1353,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe.only("Manager functionality", () => {
+    describe("Manager functionality", () => {
 
         beforeEach(async () => {
             const result = await setupScenario();
@@ -1469,7 +1469,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe.only("Earn functionality", () => {
+    describe("Earn functionality", () => {
 
         beforeEach(async () => {
 
@@ -1706,7 +1706,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe.only("Claim functionality", () => {
+    describe("Claim functionality", () => {
 
         beforeEach(async () => {
 
@@ -1824,7 +1824,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe.only("Exit functionality", () => {
+    describe("Exit functionality", () => {
 
         beforeEach(async () => {
 
@@ -1926,7 +1926,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe.only("Recover token functionality", () => {
+    describe("Recover token functionality", () => {
 
         beforeEach(async () => {
 
