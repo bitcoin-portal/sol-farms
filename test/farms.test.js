@@ -1812,7 +1812,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             await expectRevert(
                 farm.claimReward(
                     {
-                    from: nonStakerAddress
+                        from: nonStakerAddress
                     }
                 ),
                 "SimpleFarm: NOTHING_TO_CLAIM"
@@ -1841,17 +1841,13 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             await farm.farmDeposit(
                 defaultTokenAmount
             );
-        });
-
-        it("should not be able to exit as last farmer until rewards are still available", async () => {
-
-            await farm.farmDeposit(
-                defaultTokenAmount
-            );
 
             await farm.setRewardRate(
                 10
             );
+        });
+
+        it("should not be able to exit as last farmer until rewards are still available", async () => {
 
             const withdrawAccount = owner;
 
@@ -1901,28 +1897,57 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it.skip("should reduce the balance of the wallet thats burnng the tokens", async () => {
+        it("should not be able to exit if nothing to claim, perform withdraw instead", async () => {
 
-            const burnAmount = ONE_TOKEN;
-            const supplyBefore = await token.balanceOf(owner);
+            const withdrawAccount = owner;
 
-            await token.burn(
-                burnAmount,
+            const possibleWithdraw = await farm.balanceOf(
+                withdrawAccount
+            );
+
+            await expectRevert(
+                farm.exitFarm(
+                    {
+                        from: owner
+                    }
+                ),
+                "SimpleFarm: STILL_EARNING"
+            );
+
+            await time.increase(
+                defaultDurationInSeconds + 1
+            );
+
+            await farm.claimReward(
                 {
-                    from: owner
+                    from: withdrawAccount
                 }
-
             );
 
-            const supplyAfter = await token.balanceOf(owner);
-
-            assert.equal(
-                supplyAfter,
-                supplyBefore - burnAmount
+            await expectRevert(
+                farm.exitFarm(
+                    {
+                        from: owner
+                    }
+                ),
+                "SimpleFarm: NOTHING_TO_CLAIM"
             );
-        });
 
-        it.skip("should not be able to exit if nothing to claim", async () => {
+            await farm.farmWithdraw(
+                possibleWithdraw,
+                {
+                    from: withdrawAccount
+                }
+            );
+
+            await expectRevert.unspecified(
+                farm.farmWithdraw(
+                    possibleWithdraw,
+                    {
+                        from: withdrawAccount
+                    }
+                )
+            );
         });
     });
 
