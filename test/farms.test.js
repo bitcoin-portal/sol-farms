@@ -1748,7 +1748,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should earn rewards proportionally to staked amount", async () => {
+        it("should earn rewards proportionally to staked amount single", async () => {
 
             await farm.farmDeposit(
                 defaultTokenAmount,
@@ -1835,7 +1835,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should earn rewards proportionally to staked amount", async () => {
+        it("should earn rewards proportionally to staked amount multiple", async () => {
 
             await farm.farmDeposit(
                 ONE_TOKEN,
