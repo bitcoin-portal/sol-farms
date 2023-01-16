@@ -394,6 +394,7 @@ contract SimpleFarm is TokenWrapper {
 
     /**
      * @dev Manager sets reward per second to be distributed
+     * and invokes initial distribution to be started right away,
      * must have some tokens already staked before executing.
      */
     function setRewardRate(
