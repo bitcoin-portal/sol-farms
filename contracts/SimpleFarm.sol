@@ -63,6 +63,7 @@ contract SimpleFarm is TokenWrapper {
     );
 
     event RewardAdded(
+        uint256 rewardRate,
         uint256 tokenAmount
     );
 
@@ -451,6 +452,7 @@ contract SimpleFarm is TokenWrapper {
         );
 
         emit RewardAdded(
+            _newRewardRate,
             newRewardAmount
         );
     }
