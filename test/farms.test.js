@@ -838,6 +838,31 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
                 (BN(supplyBefore).add(BN(depositAmount))).toString()
             );
         });
+
+        it("should not be able to deposit if not appored enough", async () => {
+
+            const allowance = await stakeToken.allowance(
+                owner,
+                farm.address
+            );
+
+            const depositAmount = tokens("2000");
+
+            assert.isAbove(
+                parseInt(depositAmount),
+                parseInt(allowance)
+            );
+
+            await expectRevert.unspecified(
+                farm.farmDeposit(
+                    depositAmount,
+                    {
+                        from: owner
+                    }
+                ),
+                "SafeERC20: CALL_FAILED"
+            );
+        });
     });
 
     describe("Receipt token approve functionality", () => {
