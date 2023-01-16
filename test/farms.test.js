@@ -1790,9 +1790,6 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should update lastUpdateTime value after claim", async () => {
-        });
-
         it("should revert if nothing to claim", async () => {
             const stakerAddess = owner;
             const nonStakerAddress = bob;
