@@ -66,7 +66,10 @@ contract SafeERC20 {
 
         if (returndata.length > 0) {
             require(
-                abi.decode(returndata, (bool)),
+                abi.decode(
+                    returndata,
+                    (bool)
+                ),
                 "SafeERC20: OPERATION_FAILED"
             );
         }
