@@ -836,6 +836,83 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
+    describe("Receipt token approve functionality", () => {
+
+        beforeEach(async () => {
+
+            const result = await setupScenario({
+                approval: true
+            });
+
+            farm = result.farm;
+
+        });
+
+        it("should be able to increase allowance", async () => {
+
+            const initialAllowance = await farm.allowance(
+                owner,
+                bob
+            );
+            const increaseValue = ONE_TOKEN;
+
+            await farm.increaseAllowance(
+                bob,
+                increaseValue
+            );
+
+            const allowanceIncreased = await farm.allowance(
+                owner,
+                bob
+            );
+
+            assert.isAbove(
+                parseInt(allowanceIncreased),
+                parseInt(initialAllowance)
+            );
+
+            assert.equal(
+                parseInt(allowanceIncreased),
+                parseInt(initialAllowance) + parseInt(increaseValue)
+            );
+        });
+
+        it("should be able to decrease allowance", async () => {
+
+            await farm.approve(
+                bob,
+                ONE_TOKEN
+            );
+
+            const initialAllowance = await farm.allowance(
+                owner,
+                bob
+            );
+
+            const decreaseValue = ONE_TOKEN;
+
+            await farm.decreaseAllowance(
+                bob,
+                decreaseValue
+            );
+
+            const allowanceDecreased = await farm.allowance(
+                owner,
+                bob
+            );
+
+            assert.isBelow(
+                parseInt(allowanceDecreased),
+                parseInt(initialAllowance)
+            );
+
+            assert.equal(
+                parseInt(allowanceDecreased),
+                parseInt(initialAllowance) - parseInt(decreaseValue)
+            );
+        });
+    });
+
     describe("Receipt token transfer functionality", () => {
 
         beforeEach(async () => {
