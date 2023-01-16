@@ -1783,7 +1783,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe("Claim functionality", () => {
+    describe("Claiming functionality", () => {
 
         beforeEach(async () => {
 
@@ -1804,6 +1804,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         it("should reset userRewards mapping after claim to 0", async () => {
 
             const stakerAddess = owner;
+            const expectedValue = 0;
 
             const userRewardsBeforeClaim = await farm.userRewards(
                 stakerAddess
@@ -1815,12 +1816,12 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
 
             assert.equal(
                 parseInt(earnedFromStart),
-                0
+                expectedValue
             );
 
             assert.equal(
                 parseInt(userRewardsBeforeClaim),
-                0
+                expectedValue
             );
 
             await farm.setRewardRate(
@@ -1839,7 +1840,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
 
             assert.isAbove(
                 parseInt(earnedAfterStart),
-                0
+                expectedValue
             );
 
             await time.increase(
@@ -1863,7 +1864,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
 
             assert.equal(
                 parseInt(userRewardsAfterClaim),
-                0
+                expectedValue
             );
         });
 
@@ -1896,6 +1897,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         it("should update lastUpdateTime value after claim", async () => {
 
             const stakerAddess = owner;
+            const expectedValue = 0;
 
             const userRewardsBeforeClaim = await farm.userRewards(
                 stakerAddess
@@ -1907,12 +1909,12 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
 
             assert.equal(
                 parseInt(earnedFromStart),
-                0
+                expectedValue
             );
 
             assert.equal(
                 parseInt(userRewardsBeforeClaim),
-                0
+                expectedValue
             );
 
             await farm.setRewardRate(
@@ -1931,7 +1933,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
 
             assert.isAbove(
                 parseInt(earnedAfterStart),
-                0
+                expectedValue
             );
 
             await time.increase(
@@ -1953,23 +1955,18 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
 
         beforeEach(async () => {
 
+            defaultTokenAmount = TWO_TOKENS;
+            defaultRate = 10;
+
             const result = await setupScenario({
-                approval: true
+                approval: true,
+                deposit: defaultTokenAmount,
+                rate: defaultRate
             });
 
             stakeToken = result.stakeToken;
             rewardToken = result.rewardToken;
             farm = result.farm;
-
-            defaultTokenAmount = TWO_TOKENS;
-
-            await farm.farmDeposit(
-                defaultTokenAmount
-            );
-
-            await farm.setRewardRate(
-                10
-            );
         });
 
         it("should not be able to exit until rewards are still available", async () => {
