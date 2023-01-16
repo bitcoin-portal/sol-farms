@@ -16,6 +16,10 @@ const tokens = (value) => {
 const ONE_TOKEN = tokens("1");
 const TWO_TOKENS = tokens("2");
 
+const MAX_VALUE = BN(2)
+    .pow(BN(256))
+    .sub(BN(1));
+
 const getLastEvent = async (eventName, instance) => {
     const events = await instance.getPastEvents(eventName, {
         fromBlock: 0,
@@ -910,6 +914,73 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             assert.equal(
                 parseInt(allowanceDecreased),
                 parseInt(initialAllowance) - parseInt(decreaseValue)
+            );
+        });
+
+        it("should not change allowance if its at maximum", async () => {
+
+            const approvalValue = MAX_VALUE;
+            const transferValue = ONE_TOKEN;
+
+            await stakeToken.mint(
+                transferValue,
+                {
+                    from: bob
+                }
+            );
+
+            await stakeToken.approve(
+                farm.address,
+                approvalValue,
+                {
+                    from: bob
+                }
+            );
+
+            await farm.farmDeposit(
+                ONE_TOKEN,
+                {
+                    from: bob
+                }
+            );
+
+            await farm.approve(
+                bob,
+                approvalValue
+            );
+
+            const allowanceValueBefore = await farm.allowance(
+                owner,
+                bob
+            );
+
+            assert.equal(
+                MAX_VALUE.toString(),
+                allowanceValueBefore.toString()
+            );
+
+            await farm.transferFrom(
+                owner,
+                alice,
+                transferValue,
+                {
+                    from: bob
+                }
+            );
+
+            const allowanceValueAfter = await farm.allowance(
+                owner,
+                bob
+            );
+
+            assert.equal(
+                allowanceValueBefore.toString(),
+                allowanceValueAfter.toString()
+            );
+
+            assert.equal(
+                MAX_VALUE.toString(),
+                allowanceValueAfter.toString()
             );
         });
 
