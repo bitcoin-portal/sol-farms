@@ -1816,8 +1816,59 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should deduct the correct amount from the total supply", async () => {
+        it("should update lastUpdateTime value after claim", async () => {
 
+            const stakerAddess = owner;
+
+            const userRewardsBeforeClaim = await farm.userRewards(
+                stakerAddess
+            );
+
+            const earnedFromStart = await farm.earned(
+                stakerAddess
+            );
+
+            assert.equal(
+                parseInt(earnedFromStart),
+                0
+            );
+
+            assert.equal(
+                parseInt(userRewardsBeforeClaim),
+                0
+            );
+
+            await farm.setRewardRate(
+                defaultRate
+            );
+
+            const timeJumpStep = 1;
+
+            await time.increase(
+                timeJumpStep
+            );
+
+            const earnedAfterStart = await farm.earned(
+                stakerAddess
+            );
+
+            assert.isAbove(
+                parseInt(earnedAfterStart),
+                0
+            );
+
+            await time.increase(
+                timeJumpStep
+            );
+
+            const lastUpdateTime = await farm.lastUpdateTime();
+            await farm.claimReward();
+            const lastUpdateTimeAfter = await farm.lastUpdateTime();
+
+            assert.isAbove(
+                lastUpdateTimeAfter.toNumber(),
+                lastUpdateTime.toNumber()
+            );
         });
     });
 
