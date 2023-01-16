@@ -841,7 +841,8 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         beforeEach(async () => {
 
             const result = await setupScenario({
-                approval: true
+                approval: true,
+                deposit: ONE_TOKEN
             });
 
             farm = result.farm;
@@ -909,6 +910,29 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             assert.equal(
                 parseInt(allowanceDecreased),
                 parseInt(initialAllowance) - parseInt(decreaseValue)
+            );
+        });
+
+        it("should revert if the sender has spent more than their approved amount", async () => {
+
+            const approvedValue = ONE_TOKEN;
+            const transferValue = TWO_TOKENS;
+            const approvedWallet = alice;
+
+            await farm.approve(
+                approvedWallet,
+                approvedValue
+            );
+
+            await expectRevert.unspecified(
+                farm.transferFrom(
+                    owner,
+                    bob,
+                    transferValue,
+                    {
+                        from: approvedWallet
+                    }
+                )
             );
         });
     });
