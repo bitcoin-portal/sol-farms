@@ -16,6 +16,7 @@ contract SimpleFarm is TokenWrapper {
     uint256 public perTokenStored;
 
     uint256 constant PRECISION = 1E18;
+    address constant ZERO_ADDRESS = address(0x0);
 
     mapping(address => uint256) public userRewards;
     mapping(address => uint256) public perTokenPaid;
@@ -294,6 +295,10 @@ contract SimpleFarm is TokenWrapper {
         external
         onlyOwner
     {
+        if (_newOwner == ZERO_ADDRESS) {
+            revert("SimpleFarm: WRONG_ADDRESS");
+        }
+
         proposedOwner = _newOwner;
 
         emit OwnerProposed(
@@ -328,6 +333,10 @@ contract SimpleFarm is TokenWrapper {
         external
         onlyOwner
     {
+        if (_newManager == ZERO_ADDRESS) {
+            revert("SimpleFarm: WRONG_ADDRESS");
+        }
+
         managerAddress = _newManager;
 
         emit ManagerChanged(

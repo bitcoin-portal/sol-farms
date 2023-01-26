@@ -1398,6 +1398,36 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
+        it("should revert if new owner announced is ZERO_ADDRESS", async () => {
+
+            const wrongAddress = "0x0000000000000000000000000000000000000000";
+            const rightAddress = "0x0000000000000000000000000000000000000001";
+
+            await expectRevert(
+                farm.proposeNewOwner(
+                    wrongAddress,
+                    {
+                        from: owner
+                    }
+                ),
+                "SimpleFarm: WRONG_ADDRESS"
+            );
+
+            await farm.proposeNewOwner(
+                rightAddress,
+                {
+                    from: owner
+                }
+            );
+
+            const propsoedOwner = await farm.proposedOwner();
+
+            assert.equal(
+                rightAddress,
+                propsoedOwner
+            );
+        });
+
         it("should be able to announce new owner only by current owner", async () => {
 
             const expectedCurrentOwner = owner;
@@ -1636,6 +1666,36 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             assert.equal(
                 newManager,
                 newManagerAfterChange
+            );
+        });
+
+        it("should revert if newManager is ZERO_ADDRESS", async () => {
+
+            const wrongAddress = "0x0000000000000000000000000000000000000000";
+            const rightAddress = "0x0000000000000000000000000000000000000001";
+
+            await expectRevert(
+                farm.changeManager(
+                    wrongAddress,
+                    {
+                        from: owner
+                    }
+                ),
+                "SimpleFarm: WRONG_ADDRESS"
+            );
+
+            await farm.changeManager(
+                rightAddress,
+                {
+                    from: owner
+                }
+            );
+
+            const managerAddress = await farm.managerAddress();
+
+            assert.equal(
+                rightAddress,
+                managerAddress
             );
         });
 
