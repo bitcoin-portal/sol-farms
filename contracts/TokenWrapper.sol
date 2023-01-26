@@ -6,10 +6,10 @@ import "./SafeERC20.sol";
 
 contract TokenWrapper is SafeERC20 {
 
-    string public name = "VerseFarm";
-    string public symbol = "VFARM";
+    string public constant name = "VerseFarm";
+    string public constant symbol = "VFARM";
 
-    uint8 public decimals = 18;
+    uint8 public constant decimals = 18;
 
     uint256 _totalStaked;
     mapping(address => uint256) _balances;
