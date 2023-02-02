@@ -15,6 +15,8 @@ contract TokenWrapper is SafeERC20 {
     mapping(address => uint256) _balances;
     mapping(address => mapping(address => uint256)) private _allowances;
 
+    address constant ZERO_ADDRESS = address(0x0);
+
     event Transfer(
         address indexed from,
         address indexed to,

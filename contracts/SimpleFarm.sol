@@ -16,7 +16,6 @@ contract SimpleFarm is TokenWrapper {
     uint256 public perTokenStored;
 
     uint256 constant PRECISION = 1E18;
-    address constant ZERO_ADDRESS = address(0x0);
 
     mapping(address => uint256) public userRewards;
     mapping(address => uint256) public perTokenPaid;
