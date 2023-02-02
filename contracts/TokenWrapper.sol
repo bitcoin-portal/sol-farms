@@ -69,6 +69,12 @@ contract TokenWrapper is SafeERC20 {
             _balances[_address] =
             _balances[_address] + _amount;
         }
+
+        emit Transfer(
+            ZERO_ADDRESS,
+            _address,
+            _amount
+        );
     }
 
     /**
@@ -87,6 +93,12 @@ contract TokenWrapper is SafeERC20 {
 
         _balances[_address] =
         _balances[_address] - _amount;
+
+        emit Transfer(
+            _address,
+            ZERO_ADDRESS,
+            _amount
+        );
     }
 
     /**
