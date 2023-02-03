@@ -2447,4 +2447,563 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
     });
+
+    describe("Earn functionality with transfer", () => {
+
+        beforeEach(async () => {
+
+            const result = await setupScenario({
+                approval: true
+            });
+
+            stakeToken = result.stakeToken;
+            rewardToken = result.rewardToken;
+            farm = result.farm;
+
+            defaultTokenAmount = tokens("10000");
+            defaultRewardRate = 100;
+
+            await stakeToken.mint(
+                defaultTokenAmount,
+                {
+                    from: alice
+                }
+            );
+
+            await stakeToken.mint(
+                defaultTokenAmount,
+                {
+                    from: bob
+                }
+            );
+
+            await stakeToken.approve(
+                farm.address,
+                defaultTokenAmount,
+                {
+                    from: alice
+                }
+            );
+
+            await stakeToken.approve(
+                farm.address,
+                defaultTokenAmount,
+                {
+                    from: bob
+                }
+            );
+        });
+
+        it("should issue tokens accordingly to staked balances even if transferred", async () => {
+
+            const aliceDeposit = tokens("100");
+            const bobDeposit = tokens("9900");
+
+            const SECONDS_IN_DAY = 86400;
+            const THREE_MONTHS = 90 * SECONDS_IN_DAY;
+
+            await farm.farmDeposit(
+                aliceDeposit,
+                {
+                    from: alice
+                }
+            );
+
+            await farm.farmDeposit(
+                bobDeposit,
+                {
+                    from: bob
+                }
+            );
+
+            await farm.setRewardRate(
+                defaultRewardRate
+            );
+
+            const supplyInFarmInitially = await rewardToken.balanceOf(
+                farm.address
+            );
+
+            const depositedByAlice = await farm.balanceOf(
+                alice
+            );
+
+            const depositedByBob = await farm.balanceOf(
+                bob
+            );
+
+            assert.isAbove(
+                parseInt(depositedByBob),
+                parseInt(depositedByAlice)
+            );
+
+            await time.increase(
+                THREE_MONTHS
+            );
+
+            const earnedByBobBeforeTransfer = await farm.earned(
+                bob
+            );
+
+            const earnedByAliceBeforeTransfer = await farm.earned(
+                alice
+            );
+
+            assert.isAbove(
+                parseInt(earnedByBobBeforeTransfer),
+                parseInt(earnedByAliceBeforeTransfer)
+            );
+
+            await farm.transfer(
+                alice,
+                depositedByBob,
+                {
+                    from: bob
+                }
+            );
+
+            const earnedByBobAfterTransfer = await farm.earned(
+                bob
+            );
+
+            const earnedByAliceAfterTransfer = await farm.earned(
+                alice
+            );
+
+            assert.isAbove(
+                parseInt(earnedByBobAfterTransfer),
+                parseInt(earnedByAliceAfterTransfer)
+            );
+
+            assert.equal(
+                parseInt(earnedByBobAfterTransfer),
+                parseInt(earnedByBobBeforeTransfer),
+            );
+
+            assert.equal(
+                parseInt(earnedByAliceBeforeTransfer),
+                parseInt(earnedByAliceAfterTransfer)
+            );
+
+            const depositedByAliceAfterTransfer = await farm.balanceOf(
+                alice
+            );
+
+            const depositedByBobAfterTransfer = await farm.balanceOf(
+                bob
+            );
+
+            assert.equal(
+                parseInt(depositedByBobAfterTransfer),
+                0
+            );
+
+            assert.equal(
+                parseInt(depositedByAliceAfterTransfer),
+                parseInt(depositedByAlice) + parseInt(depositedByBob)
+            );
+
+            const supplyInFarmBefore = await rewardToken.balanceOf(
+                farm.address
+            );
+
+            await farm.farmWithdraw(
+                tokens("10000"),
+                {
+                    from: alice
+                }
+            );
+
+            await farm.claimReward(
+                {
+                    from: alice
+                }
+            );
+
+            const alicesTransfer = await getLastEvent(
+                "Transfer",
+                rewardToken
+            );
+
+            await farm.claimReward(
+                {
+                    from: bob
+                }
+            );
+
+            const bobsTransfer = await getLastEvent(
+                "Transfer",
+                rewardToken
+            );
+
+            const supplyAliceGot = await rewardToken.balanceOf(
+                alice
+            );
+
+            assert.equal(
+                supplyInFarmBefore.toString(),
+                supplyInFarmInitially.toString()
+            );
+
+            assert.equal(
+                alicesTransfer.from,
+                farm.address
+            );
+
+            assert.equal(
+                alicesTransfer.to,
+                alice
+            );
+
+            assert.equal(
+                alicesTransfer.value.toString(),
+                earnedByAliceBeforeTransfer.toString()
+            );
+
+            assert.equal(
+                alicesTransfer.value.toString(),
+                supplyAliceGot.toString()
+            );
+
+            assert.equal(
+                bobsTransfer.value.toString(),
+                earnedByBobBeforeTransfer.toString()
+            );
+
+            assert.equal(
+                bobsTransfer.value.toString(),
+                earnedByBobAfterTransfer.toString()
+            );
+        });
+
+        it("should issue tokens accordingly to staked balances even if transferred", async () => {
+
+            const aliceDeposit = tokens("100");
+            const bobDeposit = tokens("9900");
+
+            const SECONDS_IN_DAY = 86400;
+            const THREE_MONTHS = 90 * SECONDS_IN_DAY;
+
+            await farm.farmDeposit(
+                aliceDeposit,
+                {
+                    from: alice
+                }
+            );
+
+            await farm.setRewardRate(
+                defaultRewardRate
+            );
+
+            const supplyInFarmInitially = await rewardToken.balanceOf(
+                farm.address
+            );
+
+            const depositedByAlice = await farm.balanceOf(
+                alice
+            );
+
+            await time.increase(
+                THREE_MONTHS
+            );
+
+            const earnedByAliceBeforeTransfer = await farm.earned(
+                alice
+            );
+
+            await farm.farmDeposit(
+                bobDeposit,
+                {
+                    from: bob
+                }
+            );
+
+            const depositedByBob = await farm.balanceOf(
+                bob
+            );
+
+            const earnedByBobBeforeTransfer = await farm.earned(
+                bob
+            );
+
+            await farm.transfer(
+                alice,
+                depositedByBob,
+                {
+                    from: bob
+                }
+            );
+
+            const earnedByBobAfterTransfer = await farm.earned(
+                bob
+            );
+
+            const earnedByAliceAfterTransfer = await farm.earned(
+                alice
+            );
+
+            assert.isAbove(
+                parseInt(earnedByAliceAfterTransfer),
+                parseInt(earnedByBobAfterTransfer)
+            );
+
+            assert.equal(
+                parseInt(earnedByBobAfterTransfer),
+                0
+            );
+
+            assert.equal(
+                parseInt(earnedByAliceAfterTransfer),
+                parseInt(earnedByAliceBeforeTransfer) + parseInt(earnedByBobBeforeTransfer)
+            );
+
+            const depositedByAliceAfterTransfer = await farm.balanceOf(
+                alice
+            );
+
+            const depositedByBobAfterTransfer = await farm.balanceOf(
+                bob
+            );
+
+            assert.equal(
+                parseInt(depositedByBobAfterTransfer),
+                0
+            );
+
+            assert.equal(
+                parseInt(depositedByAliceAfterTransfer),
+                parseInt(depositedByAlice) + parseInt(depositedByBob)
+            );
+
+            const supplyInFarmBefore = await rewardToken.balanceOf(
+                farm.address
+            );
+
+            await farm.farmWithdraw(
+                tokens("10000"),
+                {
+                    from: alice
+                }
+            );
+
+            await farm.claimReward(
+                {
+                    from: alice
+                }
+            );
+
+            await expectRevert(
+                farm.claimReward(
+                    {
+                        from: bob
+                    }
+                ),
+                "SimpleFarm: NOTHING_TO_CLAIM"
+            );
+
+            const supplyInFarmAfter = await rewardToken.balanceOf(
+                farm.address
+            );
+
+            const supplyAliceGot = await rewardToken.balanceOf(
+                alice
+            );
+
+            const { from, to, value } = await getLastEvent(
+                "Transfer",
+                rewardToken
+            );
+
+            assert.equal(
+                supplyInFarmBefore.toString(),
+                supplyInFarmInitially.toString()
+            );
+
+            assert.equal(
+                from,
+                farm.address
+            );
+
+            assert.equal(
+                to,
+                alice
+            );
+
+            assert.equal(
+                value.toString(),
+                supplyInFarmInitially.toString()
+            );
+        });
+
+        it("should issue tokens accordingly to staked balances even if claimed and transferred", async () => {
+
+            const aliceDeposit = tokens("100");
+            const bobDeposit = tokens("9900");
+
+            const SECONDS_IN_DAY = 86400;
+            const THREE_MONTHS = 90 * SECONDS_IN_DAY;
+
+            await farm.farmDeposit(
+                aliceDeposit,
+                {
+                    from: alice
+                }
+            );
+
+            await farm.farmDeposit(
+                bobDeposit,
+                {
+                    from: bob
+                }
+            );
+
+            await farm.setRewardRate(
+                defaultRewardRate
+            );
+
+            const supplyInFarmInitially = await rewardToken.balanceOf(
+                farm.address
+            );
+
+            const depositedByAlice = await farm.balanceOf(
+                alice
+            );
+
+            const depositedByBob = await farm.balanceOf(
+                bob
+            );
+
+            assert.isAbove(
+                parseInt(depositedByBob),
+                parseInt(depositedByAlice)
+            );
+
+            await time.increase(
+                THREE_MONTHS
+            );
+
+            const earnedByBobBeforeTransfer = await farm.earned(
+                bob
+            );
+
+            const earnedByAliceBeforeTransfer = await farm.earned(
+                alice
+            );
+
+            assert.isAbove(
+                parseInt(earnedByBobBeforeTransfer),
+                parseInt(earnedByAliceBeforeTransfer)
+            );
+
+            await farm.claimReward(
+                {
+                    from: bob
+                }
+            );
+
+            await farm.transfer(
+                alice,
+                depositedByBob,
+                {
+                    from: bob
+                }
+            );
+
+            const earnedByBobAfterTransfer = await farm.earned(
+                bob
+            );
+
+            const earnedByAliceAfterTransfer = await farm.earned(
+                alice
+            );
+
+            assert.isAbove(
+                parseInt(earnedByAliceAfterTransfer),
+                parseInt(earnedByBobAfterTransfer)
+            );
+
+            assert.equal(
+                parseInt(earnedByBobAfterTransfer),
+                0
+            );
+
+            assert.equal(
+                parseInt(earnedByAliceAfterTransfer),
+                parseInt(earnedByAliceBeforeTransfer)
+            );
+
+            const depositedByAliceAfterTransfer = await farm.balanceOf(
+                alice
+            );
+
+            const depositedByBobAfterTransfer = await farm.balanceOf(
+                bob
+            );
+
+            assert.equal(
+                parseInt(depositedByBobAfterTransfer),
+                0
+            );
+
+            assert.equal(
+                parseInt(depositedByAliceAfterTransfer),
+                parseInt(depositedByAlice) + parseInt(depositedByBob)
+            );
+
+            await farm.farmWithdraw(
+                tokens("10000"),
+                {
+                    from: alice
+                }
+            );
+
+            await farm.claimReward(
+                {
+                    from: alice
+                }
+            );
+
+            await expectRevert(
+                farm.claimReward(
+                    {
+                        from: bob
+                    }
+                ),
+                "SimpleFarm: NOTHING_TO_CLAIM"
+            );
+
+            const supplyInFarmAfter = await rewardToken.balanceOf(
+                farm.address
+            );
+
+            const supplyAliceGot = await rewardToken.balanceOf(
+                alice
+            );
+
+            const aliceTransfer = await getLastEvent(
+                "Transfer",
+                rewardToken
+            );
+
+            assert.equal(
+                aliceTransfer.from,
+                farm.address
+            );
+
+            assert.equal(
+                aliceTransfer.to,
+                alice
+            );
+
+            assert.equal(
+                aliceTransfer.value.toString(),
+                earnedByAliceBeforeTransfer
+            );
+
+            assert.equal(
+                aliceTransfer.value.toString(),
+                earnedByAliceAfterTransfer
+            );
+        });
+    });
 });

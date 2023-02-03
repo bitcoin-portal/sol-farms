@@ -52,6 +52,12 @@ contract SimpleFarm is TokenWrapper {
         _;
     }
 
+    modifier updateSender(address sender) {
+        userRewards[sender] = earned(sender);
+        perTokenPaid[sender] = perTokenStored;
+        _;
+    }
+
     event Staked(
         address indexed user,
         uint256 tokenAmount
@@ -464,5 +470,54 @@ contract SimpleFarm is TokenWrapper {
             _newRewardRate,
             newRewardAmount
         );
+    }
+
+    /**
+     * @dev Allows to transfer receipt tokens
+     */
+    function transfer(
+        address _recipient,
+        uint256 _amount
+    )
+        external
+        updateFarm()
+        updateUser()
+        updateSender(_recipient)
+        returns (bool)
+    {
+        _transfer(
+            msg.sender,
+            _recipient,
+            _amount
+        );
+
+        return true;
+    }
+
+    /**
+     * @dev Allows to transfer receipt tokens on owner's behalf
+     */
+    function transferFrom(
+        address _sender,
+        address _recipient,
+        uint256 _amount
+    )
+        external
+        updateFarm()
+        updateSender(_sender)
+        updateSender(_recipient)
+        returns (bool)
+    {
+        if (_allowances[_sender][msg.sender] != type(uint256).max) {
+            _allowances[_sender][msg.sender] -= _amount;
+        }
+
+        _transfer(
+            _sender,
+            _recipient,
+            _amount
+        );
+
+        return true;
     }
 }
