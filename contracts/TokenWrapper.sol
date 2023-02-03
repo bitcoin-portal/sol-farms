@@ -15,6 +15,8 @@ contract TokenWrapper is SafeERC20 {
     mapping(address => uint256) _balances;
     mapping(address => mapping(address => uint256)) private _allowances;
 
+    address constant ZERO_ADDRESS = address(0x0);
+
     event Transfer(
         address indexed from,
         address indexed to,
@@ -67,6 +69,12 @@ contract TokenWrapper is SafeERC20 {
             _balances[_address] =
             _balances[_address] + _amount;
         }
+
+        emit Transfer(
+            ZERO_ADDRESS,
+            _address,
+            _amount
+        );
     }
 
     /**
@@ -85,6 +93,12 @@ contract TokenWrapper is SafeERC20 {
 
         _balances[_address] =
         _balances[_address] - _amount;
+
+        emit Transfer(
+            _address,
+            ZERO_ADDRESS,
+            _amount
+        );
     }
 
     /**

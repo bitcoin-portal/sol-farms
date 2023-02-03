@@ -1033,6 +1033,91 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
+    describe("Receipt token burn/mint functionality", () => {
+
+        beforeEach(async () => {
+
+            const result = await setupScenario({
+                approval: true
+            });
+
+            farm = result.farm;
+            defaultTokenAmount = TWO_TOKENS;
+            ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+        });
+
+        it("should emit correct event when minting receipt tokens (during deposit)", async () => {
+
+            const depositor = owner;
+
+            await farm.farmDeposit(
+                defaultTokenAmount,
+                {
+                    from: depositor
+                }
+            );
+
+            const { from, to, value } = await getLastEvent(
+                "Transfer",
+                farm
+            );
+
+            assert.equal(
+                value,
+                defaultTokenAmount
+            );
+
+            assert.equal(
+                from,
+                ZERO_ADDRESS
+            );
+
+            assert.equal(
+                to,
+                depositor
+            );
+        });
+
+        it("should emit correct event when burning receipt tokens (during withdraw)", async () => {
+
+            const depositor = owner;
+
+            await farm.farmDeposit(
+                defaultTokenAmount,
+                {
+                    from: depositor
+                }
+            );
+
+            await farm.farmWithdraw(
+                defaultTokenAmount,
+                {
+                    from: depositor
+                }
+            );
+
+            const { from, to, value } = await getLastEvent(
+                "Transfer",
+                farm
+            );
+
+            assert.equal(
+                value,
+                defaultTokenAmount
+            );
+
+            assert.equal(
+                from,
+                depositor
+            );
+
+            assert.equal(
+                to,
+                ZERO_ADDRESS
+            );
+        });
+    });
+
     describe("Receipt token transfer functionality", () => {
 
         beforeEach(async () => {
@@ -1231,7 +1316,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe("Witharaw initial dunctionality", () => {
+    describe("Witharaw initial functionality", () => {
 
         beforeEach(async () => {
 
