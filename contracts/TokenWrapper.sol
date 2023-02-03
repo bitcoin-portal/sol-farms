@@ -13,7 +13,7 @@ contract TokenWrapper is SafeERC20 {
 
     uint256 _totalStaked;
     mapping(address => uint256) _balances;
-    mapping(address => mapping(address => uint256)) private _allowances;
+    mapping(address => mapping(address => uint256)) _allowances;
 
     event Transfer(
         address indexed from,
@@ -88,25 +88,6 @@ contract TokenWrapper is SafeERC20 {
     }
 
     /**
-     * @dev Allows to transfer receipt tokens
-     */
-    function transfer(
-        address _recipient,
-        uint256 _amount
-    )
-        external
-        returns (bool)
-    {
-        _transfer(
-            msg.sender,
-            _recipient,
-            _amount
-        );
-
-        return true;
-    }
-
-    /**
      * @dev Updates balances during transfer
      */
     function _transfer(
@@ -129,30 +110,6 @@ contract TokenWrapper is SafeERC20 {
             _recipient,
             _amount
         );
-    }
-
-    /**
-     * @dev Allows to transfer receipt tokens on owner's behalf
-     */
-    function transferFrom(
-        address _sender,
-        address _recipient,
-        uint256 _amount
-    )
-        external
-        returns (bool)
-    {
-        if (_allowances[_sender][msg.sender] != type(uint256).max) {
-            _allowances[_sender][msg.sender] -= _amount;
-        }
-
-        _transfer(
-            _sender,
-            _recipient,
-            _amount
-        );
-
-        return true;
     }
 
     /**
