@@ -2734,6 +2734,15 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
                 }
             );
 
+            await expectRevert(
+                farm.claimReward(
+                    {
+                        from: bob
+                    }
+                ),
+                "SimpleFarm: NOTHING_TO_CLAIM"
+            );
+
             const earnedByBobAfterTransfer = await farm.earned(
                 bob
             );
@@ -2899,6 +2908,26 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
                 {
                     from: bob
                 }
+            );
+
+            const bobsClaim = await getLastEvent(
+                "Transfer",
+                rewardToken
+            );
+
+            assert.equal(
+                bobsClaim.from,
+                farm.address
+            );
+
+            assert.equal(
+                bobsClaim.to,
+                bob
+            );
+
+            assert.equal(
+                bobsClaim.value.toString(),
+                earnedByBobBeforeTransfer
             );
 
             await farm.transfer(
