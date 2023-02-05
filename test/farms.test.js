@@ -2844,6 +2844,124 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             );
         });
 
+        it("should continue earning with higher/lower capacity after transfer", async () => {
+
+            const aliceDeposit = tokens("5000");
+            const bobDeposit = tokens("5000");
+
+            const SECONDS_IN_DAY = 86400;
+            const TIME_STEP = 100;
+
+            await farm.farmDeposit(
+                aliceDeposit,
+                {
+                    from: alice
+                }
+            );
+
+            await farm.farmDeposit(
+                bobDeposit,
+                {
+                    from: bob
+                }
+            );
+
+            await farm.setRewardRate(
+                defaultRewardRate
+            );
+
+            const supplyInFarmInitially = await rewardToken.balanceOf(
+                farm.address
+            );
+
+            const depositedByAlice = await farm.balanceOf(
+                alice
+            );
+
+            const depositedByBob = await farm.balanceOf(
+                bob
+            );
+
+            assert.equal(
+                parseInt(depositedByBob),
+                parseInt(depositedByAlice)
+            );
+
+            await time.increase(
+                TIME_STEP
+            );
+
+            const earnedByBobBeforeTransfer = await farm.earned(
+                bob
+            );
+
+            const earnedByAliceBeforeTransfer = await farm.earned(
+                alice
+            );
+
+            assert.equal(
+                parseInt(earnedByBobBeforeTransfer),
+                parseInt(earnedByAliceBeforeTransfer)
+            );
+
+            assert.isAbove(
+                parseInt(earnedByBobBeforeTransfer),
+                0
+            );
+
+            assert.isAbove(
+                parseInt(earnedByAliceBeforeTransfer),
+                0
+            );
+
+            await farm.transfer(
+                alice,
+                depositedByBob,
+                {
+                    from: bob
+                }
+            );
+
+            await time.increase(
+                TIME_STEP
+            );
+
+            const earnedByBobAfterTransfer = await farm.earned(
+                bob
+            );
+
+            const earnedByAliceAfterTransfer = await farm.earned(
+                alice
+            );
+
+            assert.equal(
+                parseInt(earnedByBobBeforeTransfer),
+                parseInt(earnedByBobAfterTransfer)
+            );
+
+            assert.isAbove(
+                parseInt(earnedByAliceAfterTransfer),
+                parseInt(earnedByAliceBeforeTransfer)
+            );
+
+            const totalEarnedByAliceExpected = parseInt(earnedByBobBeforeTransfer)
+                + parseInt(earnedByAliceBeforeTransfer)
+                + parseInt(earnedByAliceBeforeTransfer);
+
+            assert.equal(
+                parseInt(earnedByAliceAfterTransfer),
+                totalEarnedByAliceExpected
+            );
+
+            const earnedByAliceAfterTransferDelta = parseInt(earnedByAliceAfterTransfer)
+                - parseInt(earnedByAliceBeforeTransfer);
+
+            assert.equal(
+                earnedByAliceAfterTransferDelta,
+                earnedByAliceBeforeTransfer * 2
+            );
+        });
+
         it("should issue tokens accordingly to staked balances even if claimed and transferred", async () => {
 
             const aliceDeposit = tokens("100");
