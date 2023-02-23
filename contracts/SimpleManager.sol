@@ -8,12 +8,29 @@ interface SimpleFarm {
         uint256 newRate
     )
         external;
+
+    function rewardToken()
+        external
+        view
+        returns (IERC20);
+
+    function rewardDuration()
+        external
+        view
+        returns (uint256);
 }
 
 interface IERC20 {
 
     function transfer(
         address to,
+        uint256 amount
+    )
+        external
+        returns (bool);
+
+    function approve(
+        address spender,
         uint256 amount
     )
         external
@@ -63,7 +80,20 @@ contract SimpleManager {
         onlyWorker
     {
         for (uint256 i = 0; i < _targetFarms.length; i++) {
-            SimpleFarm(_targetFarms[i]).setRewardRate(
+
+            SimpleFarm farm = SimpleFarm(
+                _targetFarms[i]
+            );
+
+            IERC20 rewardToken = farm.rewardToken();
+            uint256 rewardDuration = farm.rewardDuration();
+
+            rewardToken.approve(
+                _targetFarms[i],
+                _newRates[i] * rewardDuration
+            );
+
+            farm.setRewardRate(
                 _newRates[i]
             );
         }
