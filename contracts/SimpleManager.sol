@@ -100,12 +100,12 @@ contract SimpleManager {
     }
 
     function recoverToken(
-        address tokenAddress,
+        IERC20 tokenAddress,
         uint256 tokenAmount
     )
         external
     {
-        IERC20(tokenAddress).transfer(
+        tokenAddress.transfer(
             owner,
             tokenAmount
         );
