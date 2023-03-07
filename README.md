@@ -85,5 +85,5 @@ All files          |      100 |    95.24 |      100 |      100 |                
 ### SimpleFarm
 🏭 expected creationCode hash:
 ```
-0x84bf26518d6569eee44e1a56c72a22f974d8d0293d1a6c5f615f5c39bee30071
+0xfa923415d0153dc464f55b9793bb4a9c530c95f5808d935906d37f586c8f011c
 ```
