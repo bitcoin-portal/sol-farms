@@ -2,7 +2,7 @@
 
 pragma solidity =0.8.19;
 
-interface SimpleFarm {
+interface ISimpleFarm {
 
     function setRewardRate(
         uint256 newRate
@@ -81,7 +81,7 @@ contract SimpleManager {
     {
         for (uint256 i = 0; i < _targetFarms.length; i++) {
 
-            SimpleFarm farm = SimpleFarm(
+            ISimpleFarm farm = ISimpleFarm(
                 _targetFarms[i]
             );
 
