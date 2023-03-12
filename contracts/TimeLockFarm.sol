@@ -269,12 +269,10 @@ contract TimeLockFarm is TokenWrapper {
     function exitFarm()
         external
     {
-        uint256 withdrawAmount = _balances[
-            msg.sender
-        ];
-
         farmWithdraw(
-            withdrawAmount
+            _balances[
+                msg.sender
+            ]
         );
 
         claimReward();
