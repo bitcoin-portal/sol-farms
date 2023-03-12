@@ -245,6 +245,19 @@ contract TimeLockFarm is TokenWrapper {
     }
 
     /**
+     * @dev Returns a flag if users tokens are still locked
+     */
+    function tokensLocked(
+        address _walletAddress
+    )
+        public
+        view
+        returns (bool)
+    {
+        return block.timestamp < unlockTime[_walletAddress];
+    }
+
+    /**
      * @dev Allows to withdraw staked tokens and claim rewards
      */
     function exitFarm()
