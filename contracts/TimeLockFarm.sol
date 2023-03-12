@@ -104,6 +104,8 @@ contract TimeLockFarm is TokenWrapper {
     constructor(
         IERC20 _stakeToken,
         IERC20 _rewardToken,
+        address _ownerAddress,
+        address _managerAddress,
         uint256 _defaultDuration,
         uint256 _defaultTimeLock
     ) {
@@ -115,8 +117,8 @@ contract TimeLockFarm is TokenWrapper {
         stakeToken = _stakeToken;
         rewardToken = _rewardToken;
 
-        ownerAddress = msg.sender;
-        managerAddress = msg.sender;
+        ownerAddress = _ownerAddress;
+        managerAddress = _managerAddress;
 
         timeLock = _defaultTimeLock;
         rewardDuration = _defaultDuration;
