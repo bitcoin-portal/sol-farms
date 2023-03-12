@@ -4,6 +4,10 @@ pragma solidity =0.8.19;
 
 import "./TokenWrapper.sol";
 
+error LockedUntil(
+    uint256 unlockTime
+);
+
 contract TimeLockFarm is TokenWrapper {
 
     IERC20 public immutable stakeToken;
@@ -223,8 +227,10 @@ contract TimeLockFarm is TokenWrapper {
 
         address senderAddress = msg.sender;
 
-        if (block.timestamp < unlockTime[senderAddress]) {
-            revert("SimpleFarm: STILL_LOCKED");
+        if (tokensLocked(senderAddress) == true) {
+            revert LockedUntil(
+                unlockTime[senderAddress]
+            );
         }
 
         _withdraw(
