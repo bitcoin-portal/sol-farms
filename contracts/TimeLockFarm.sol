@@ -23,7 +23,6 @@ contract TimeLockFarm is TokenWrapper {
     mapping(address => uint256) public perTokenPaid;
 
     address public ownerAddress;
-    address public proposedOwner;
     address public managerAddress;
 
     modifier onlyOwner() {
@@ -87,14 +86,6 @@ contract TimeLockFarm is TokenWrapper {
 
     event RewardsDurationUpdated(
         uint256 newRewardDuration
-    );
-
-    event OwnerProposed(
-        address proposedOwner
-    );
-
-    event OwnerChanged(
-        address newOwner
     );
 
     event ManagerChanged(
@@ -301,44 +292,6 @@ contract TimeLockFarm is TokenWrapper {
         emit RewardPaid(
             senderAddress,
             rewardAmount
-        );
-    }
-
-    /**
-     * @dev Allows to invoke owner-change procedure
-     */
-    function proposeNewOwner(
-        address _newOwner
-    )
-        external
-        onlyOwner
-    {
-        if (_newOwner == ZERO_ADDRESS) {
-            revert("SimpleFarm: WRONG_ADDRESS");
-        }
-
-        proposedOwner = _newOwner;
-
-        emit OwnerProposed(
-            _newOwner
-        );
-    }
-
-    /**
-     * @dev Finalizes owner-change 2-step procedure
-     */
-    function claimOwnership()
-        external
-    {
-        require(
-            msg.sender == proposedOwner,
-            "SimpleFarm: INVALID_CANDIDATE"
-        );
-
-        ownerAddress = proposedOwner;
-
-        emit OwnerChanged(
-            ownerAddress
         );
     }
 
