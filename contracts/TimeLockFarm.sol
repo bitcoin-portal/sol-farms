@@ -29,7 +29,7 @@ contract TimeLockFarm is TokenWrapper {
     modifier onlyOwner() {
         require(
             msg.sender == ownerAddress,
-            "SimpleFarm: INVALID_OWNER"
+            "TimeLockFarm: INVALID_OWNER"
         );
         _;
     }
@@ -37,7 +37,7 @@ contract TimeLockFarm is TokenWrapper {
     modifier onlyManager() {
         require(
             msg.sender == managerAddress,
-            "SimpleFarm: INVALID_MANAGER"
+            "TimeLockFarm: INVALID_MANAGER"
         );
         _;
     }
@@ -109,7 +109,7 @@ contract TimeLockFarm is TokenWrapper {
     ) {
         require(
             _defaultDuration > 0,
-            "SimpleFarm: INVALID_DURATION"
+            "TimeLockFarm: INVALID_DURATION"
         );
 
         stakeToken = _stakeToken;
@@ -224,7 +224,7 @@ contract TimeLockFarm is TokenWrapper {
         if (block.timestamp < periodFinished) {
             require(
                 _totalStaked > _withdrawAmount,
-                "SimpleFarm: STILL_EARNING"
+                "TimeLockFarm: STILL_EARNING"
             );
         }
 
@@ -285,7 +285,7 @@ contract TimeLockFarm is TokenWrapper {
 
         require(
             rewardAmount > 0,
-            "SimpleFarm: NOTHING_TO_CLAIM"
+            "TimeLockFarm: NOTHING_TO_CLAIM"
         );
 
         userRewards[senderAddress] = 0;
@@ -350,7 +350,7 @@ contract TimeLockFarm is TokenWrapper {
         onlyOwner
     {
         if (_newManager == ZERO_ADDRESS) {
-            revert("SimpleFarm: WRONG_ADDRESS");
+            revert("TimeLockFarm: WRONG_ADDRESS");
         }
 
         managerAddress = _newManager;
@@ -371,11 +371,11 @@ contract TimeLockFarm is TokenWrapper {
         external
     {
         if (tokenAddress == stakeToken) {
-            revert("SimpleFarm: INVALID_TOKEN");
+            revert("TimeLockFarm: INVALID_TOKEN");
         }
 
         if (tokenAddress == rewardToken) {
-            revert("SimpleFarm: INVALID_TOKEN");
+            revert("TimeLockFarm: INVALID_TOKEN");
         }
 
         safeTransfer(
@@ -402,12 +402,12 @@ contract TimeLockFarm is TokenWrapper {
     {
         require(
             _rewardDuration > 0,
-            "SimpleFarm: INVALID_DURATION"
+            "TimeLockFarm: INVALID_DURATION"
         );
 
         require(
             block.timestamp > periodFinished,
-            "SimpleFarm: ONGOING_DISTRIBUTION"
+            "TimeLockFarm: ONGOING_DISTRIBUTION"
         );
 
         rewardDuration = _rewardDuration;
@@ -431,12 +431,12 @@ contract TimeLockFarm is TokenWrapper {
     {
         require(
             _totalStaked > 0,
-            "SimpleFarm: NO_STAKERS"
+            "TimeLockFarm: NO_STAKERS"
         );
 
         require(
             _newRewardRate > 0,
-            "SimpleFarm: INVALID_RATE"
+            "TimeLockFarm: INVALID_RATE"
         );
 
         uint256 currentPeriodFinish = periodFinished;
@@ -449,7 +449,7 @@ contract TimeLockFarm is TokenWrapper {
 
             require(
                 _newRewardRate >= rewardRate,
-                "SimpleFarm: RATE_CANT_DECREASE"
+                "TimeLockFarm: RATE_CANT_DECREASE"
             );
 
             uint256 remainingTime = currentPeriodFinish
