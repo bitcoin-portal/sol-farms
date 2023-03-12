@@ -26,8 +26,8 @@ contract TimeLockFarm is TokenWrapper {
     mapping(address => uint256) public userRewards;
     mapping(address => uint256) public perTokenPaid;
 
-    address public ownerAddress;
     address public managerAddress;
+    address public immutable ownerAddress;
 
     modifier onlyOwner() {
         require(
