@@ -468,6 +468,12 @@ contract TimeLockFarm is TokenWrapper {
         updateAddy(_recipient)
         returns (bool)
     {
+        if (tokensLocked(msg.sender) == true) {
+            revert LockedUntil(
+                unlockTime[msg.sender]
+            );
+        }
+
         _transfer(
             msg.sender,
             _recipient,
@@ -493,6 +499,12 @@ contract TimeLockFarm is TokenWrapper {
     {
         if (_allowances[_sender][msg.sender] != type(uint256).max) {
             _allowances[_sender][msg.sender] -= _amount;
+        }
+
+        if (tokensLocked(_sender) == true) {
+            revert LockedUntil(
+                unlockTime[_sender]
+            );
         }
 
         _transfer(
