@@ -60,9 +60,9 @@ contract TimeLockFarmV2 is TokenWrapper {
         _;
     }
 
-    modifier updateAddy(address sender) {
-        userRewards[sender] = earned(sender);
-        perTokenPaid[sender] = perTokenStored;
+    modifier updateAddy(address _sender) {
+        userRewards[_sender] = earned(_sender);
+        perTokenPaid[_sender] = perTokenStored;
         _;
     }
 
