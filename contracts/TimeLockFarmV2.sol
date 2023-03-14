@@ -253,45 +253,9 @@ contract TimeLockFarmV2 is TokenWrapper {
 
         address senderAddress = msg.sender;
 
-        Stake[] storage userStakes = stakes[
+        _unlock(
+            _withdrawAmount,
             senderAddress
-        ];
-
-        uint256 unlockedAmount;
-        uint256 stakesLength = userStakes.length;
-
-        for (uint256 i = 0; i < stakesLength; ++i) {
-
-            Stake storage userStake = userStakes[i];
-
-            if (block.timestamp < userStake.unlockTime) {
-                continue;
-            }
-
-            uint256 stakeAmount = userStake.amount;
-            uint256 remainingAmount = _withdrawAmount - unlockedAmount;
-
-            uint256 unlockAmount = remainingAmount > stakeAmount
-                ? stakeAmount
-                : remainingAmount;
-
-            unlockedAmount += unlockAmount;
-            userStake.amount -= unlockAmount;
-
-            if (userStake.amount == 0) {
-                userStakes[i] = userStakes[stakesLength - 1];
-                userStakes.pop();
-                --i;
-            }
-
-            if (unlockedAmount == _withdrawAmount) {
-                break;
-            }
-        }
-
-        require(
-            unlockedAmount == _withdrawAmount,
-            "TimeLockFarmV2: UNLOCK_INSUFFICIENT"
         );
 
         _withdraw(
@@ -503,6 +467,54 @@ contract TimeLockFarmV2 is TokenWrapper {
         );
     }
 
+    function _unlock(
+        uint256 _withdrawAmount,
+        address _senderAddress
+    )
+        private
+    {
+        Stake[] storage userStakes = stakes[
+            _senderAddress
+        ];
+
+        uint256 unlockedAmount;
+        uint256 stakesLength = userStakes.length;
+
+        for (uint256 i = 0; i < stakesLength; ++i) {
+
+            Stake storage userStake = userStakes[i];
+
+            if (block.timestamp < userStake.unlockTime) {
+                continue;
+            }
+
+            uint256 stakeAmount = userStake.amount;
+            uint256 remainingAmount = _withdrawAmount - unlockedAmount;
+
+            uint256 unlockAmount = remainingAmount > stakeAmount
+                ? stakeAmount
+                : remainingAmount;
+
+            unlockedAmount += unlockAmount;
+            userStake.amount -= unlockAmount;
+
+            if (userStake.amount == 0) {
+                userStakes[i] = userStakes[stakesLength - 1];
+                userStakes.pop();
+                --i;
+            }
+
+            if (unlockedAmount == _withdrawAmount) {
+                break;
+            }
+        }
+
+        require(
+            unlockedAmount == _withdrawAmount,
+            "TimeLockFarmV2: UNLOCK_INSUFFICIENT"
+        );
+    }
+
     /**
      * @dev Allows to transfer receipt tokens
      */
@@ -516,6 +528,18 @@ contract TimeLockFarmV2 is TokenWrapper {
         updateAddy(_recipient)
         returns (bool)
     {
+        _unlock(
+            _amount,
+            msg.sender
+        );
+
+        stakes[_recipient].push(
+            Stake(
+                _amount,
+                block.timestamp
+            )
+        );
+
         _transfer(
             msg.sender,
             _recipient,
@@ -542,6 +566,18 @@ contract TimeLockFarmV2 is TokenWrapper {
         if (_allowances[_sender][msg.sender] != type(uint256).max) {
             _allowances[_sender][msg.sender] -= _amount;
         }
+
+        _unlock(
+            _amount,
+            _sender
+        );
+
+        stakes[_recipient].push(
+            Stake(
+                _amount,
+                block.timestamp
+            )
+        );
 
         _transfer(
             _sender,
