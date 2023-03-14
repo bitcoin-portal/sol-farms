@@ -8,6 +8,7 @@
 		"test": "npx hardhat test",
 		"test-token": "npx hardhat test test/token.test.js",
 		"test-farms": "npx hardhat test test/farms.test.js",
+		"test-timelock": "npx hardhat test test/timelock.test.js",
 		"coverage": "npx truffle run coverage --network development"
 	},
 	"repository": {
