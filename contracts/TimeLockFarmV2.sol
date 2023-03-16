@@ -501,7 +501,9 @@ contract TimeLockFarmV2 is TokenWrapper {
 
             if (userStake.amount == 0) {
                 if (userStakes.length > 1) {
-                    userStakes[i] = userStakes[userStakes.length - 1];
+                    userStakes[i] = userStakes[
+                        userStakes.length - 1
+                    ];
                 }
                 userStakes.pop();
                 if (userStakes.length == i) {
