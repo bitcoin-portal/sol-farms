@@ -477,35 +477,42 @@ contract TimeLockFarmV2 is TokenWrapper {
             _senderAddress
         ];
 
+        uint256 i;
         uint256 unlockedAmount;
-        uint256 stakesLength = userStakes.length;
 
-        for (uint256 i = 0; i < stakesLength; ++i) {
+        while (i < userStakes.length) {
 
             Stake storage userStake = userStakes[i];
 
             if (block.timestamp < userStake.unlockTime) {
+                i++;
                 continue;
             }
 
-            uint256 stakeAmount = userStake.amount;
+            uint256 amountToUnlock = userStake.amount;
             uint256 remainingAmount = _withdrawAmount - unlockedAmount;
 
-            uint256 unlockAmount = remainingAmount > stakeAmount
-                ? stakeAmount
+            uint256 unlockAmount = amountToUnlock < remainingAmount
+                ? amountToUnlock
                 : remainingAmount;
 
             unlockedAmount += unlockAmount;
-            userStake.amount -= unlockAmount;
+            userStake.amount -= unlockAmount; // userStake.amount = amountToUnlock - unlockAmount;
 
             if (userStake.amount == 0) {
-                userStakes[i] = userStakes[stakesLength - 1];
+                if (userStakes.length > 1) {
+                    userStakes[i] = userStakes[userStakes.length - 1];
+                }
                 userStakes.pop();
-                --i;
+                if (userStakes.length == i) {
+                    break;
+                }
+            } else {
+                i++;
             }
 
             if (unlockedAmount == _withdrawAmount) {
-                break;
+                return;
             }
         }
 
