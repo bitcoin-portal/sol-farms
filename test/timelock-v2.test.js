@@ -35,7 +35,7 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
         stakeToken = await Token.new();
         rewardToken = await Token.new();
 
-        defaultUnlockTime = 0;
+        defaultUnlockTime = 150;
         defaultApprovalAmount = 100;
         defaultDurationInSeconds = 300;
 
@@ -994,6 +994,10 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
                 allowanceValueBefore.toString()
             );
 
+            await time.increase(
+                defaultUnlockTime
+            );
+
             await farm.transferFrom(
                 owner,
                 alice,
@@ -1099,6 +1103,10 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
                 }
             );
 
+            await time.increase(
+                defaultUnlockTime
+            );
+
             await farm.farmWithdraw(
                 defaultTokenAmount,
                 {
@@ -1152,6 +1160,10 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
             const transferValue = defaultTokenAmount;
             const balanceBefore = await farm.balanceOf(bob);
 
+            await time.increase(
+                defaultUnlockTime
+            );
+
             await farm.transfer(
                 bob,
                 transferValue,
@@ -1183,10 +1195,25 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should reduce wallets balance after transfer", async () => {
+        it("if tokens unlocked should reduce wallets balance after transfer", async () => {
 
             const transferValue = defaultTokenAmount;
             const balanceBefore = await farm.balanceOf(owner);
+
+            await expectRevert(
+                farm.transfer(
+                    bob,
+                    transferValue,
+                    {
+                        from: owner
+                    }
+                ),
+                "TimeLockFarmV2: UNLOCK_INSUFFICIENT"
+            );
+
+            await time.increase(
+                defaultUnlockTime
+            );
 
             await farm.transfer(
                 bob,
@@ -1204,10 +1231,25 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should emit correct Transfer event", async () => {
+        it("if tokens unlocked should emit correct Transfer event", async () => {
 
             const transferValue = defaultTokenAmount;
             const expectedRecepient = bob;
+
+            await expectRevert(
+                farm.transfer(
+                    expectedRecepient,
+                    transferValue,
+                    {
+                        from: owner
+                    }
+                ),
+                "TimeLockFarmV2: UNLOCK_INSUFFICIENT"
+            );
+
+            await time.increase(
+                defaultUnlockTime
+            );
 
             await farm.transfer(
                 expectedRecepient,
@@ -1238,7 +1280,7 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should update the balance of the recipient when using transferFrom", async () => {
+        it("if tokens unlocked should update the balance of the recipient when using transferFrom", async () => {
 
             const transferValue = defaultTokenAmount;
             const expectedRecipient = bob;
@@ -1247,6 +1289,19 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
             await farm.approve(
                 owner,
                 transferValue
+            );
+
+            await expectRevert(
+                farm.transferFrom(
+                    owner,
+                    expectedRecipient,
+                    transferValue,
+                ),
+                "TimeLockFarmV2: UNLOCK_INSUFFICIENT"
+            );
+
+            await time.increase(
+                defaultUnlockTime
             );
 
             await farm.transferFrom(
@@ -1263,7 +1318,7 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should deduct from the balance of the sender when using transferFrom", async () => {
+        it("if tokens unlocked should deduct from the balance of the sender when using transferFrom", async () => {
 
             const transferValue = defaultTokenAmount;
             const expectedRecipient = bob;
@@ -1272,6 +1327,19 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
             await farm.approve(
                 owner,
                 transferValue
+            );
+
+            await expectRevert(
+                farm.transferFrom(
+                    owner,
+                    expectedRecipient,
+                    transferValue,
+                ),
+                "TimeLockFarmV2: UNLOCK_INSUFFICIENT"
+            );
+
+            await time.increase(
+                defaultUnlockTime
             );
 
             await farm.transferFrom(
@@ -1345,13 +1413,27 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should reduce the balance of the wallet thats withrawing the stakeTokens", async () => {
+        it("if tokens unlocked should reduce the balance of the wallet thats withrawing the stakeTokens", async () => {
 
             const withdrawAmount = ONE_TOKEN;
             const withdrawAccount = owner;
 
             const supplyBefore = await farm.balanceOf(
                 withdrawAccount
+            );
+
+            await expectRevert(
+                farm.farmWithdraw(
+                    withdrawAmount,
+                    {
+                        from: withdrawAccount
+                    }
+                ),
+                "TimeLockFarmV2: UNLOCK_INSUFFICIENT"
+            );
+
+            await time.increase(
+                defaultUnlockTime
             );
 
             await farm.farmWithdraw(
@@ -1379,6 +1461,10 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
 
             const supplyBefore = await farm.balanceOf(
                 withdrawAccount
+            );
+
+            await time.increase(
+                defaultUnlockTime
             );
 
             await farm.farmWithdraw(
@@ -1443,6 +1529,180 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
                 {
                     from: bob
                 }
+            );
+
+            await time.increase(
+                defaultUnlockTime
+            );
+
+            await farm.farmWithdraw(
+                possibleWithdraw,
+                {
+                    from: owner
+                }
+            );
+        });
+    });
+
+    describe("Witharaw with timelock functionality", () => {
+
+        beforeEach(async () => {
+
+            const result = await setupScenario({
+                approval: true
+            });
+
+            stakeToken = result.stakeToken;
+            rewardToken = result.rewardToken;
+            farm = result.farm;
+
+            defaultDepositAmount = TWO_TOKENS;
+
+            await farm.farmDeposit(
+                defaultDepositAmount
+            );
+        });
+
+        it("if tokens locked user cannot withdraw them", async () => {
+
+            const withdrawAmount = defaultDepositAmount;
+            const withdrawAccount = owner;
+
+            const unlockedBefore = await farm.unlockable(
+                withdrawAccount
+            );
+
+            assert.equal(
+                unlockedBefore,
+                "0"
+            );
+
+            await expectRevert(
+                farm.farmWithdraw(
+                    withdrawAmount,
+                    {
+                        from: withdrawAccount
+                    }
+                ),
+                "TimeLockFarmV2: UNLOCK_INSUFFICIENT"
+            );
+
+            await time.increase(
+                defaultUnlockTime
+            );
+
+            const unlockedAfter = await farm.unlockable(
+                withdrawAccount
+            );
+
+            assert.equal(
+                unlockedAfter,
+                defaultDepositAmount
+            );
+
+            await farm.farmWithdraw(
+                withdrawAmount,
+                {
+                    from: withdrawAccount
+                }
+
+            );
+
+            const transactionData = await getLastEvent(
+                "Withdrawn",
+                farm
+            );
+
+            assert.equal(
+                transactionData.user,
+                withdrawAccount
+            );
+
+            assert.equal(
+                transactionData.tokenAmount,
+                defaultDepositAmount
+            );
+        });
+
+        it("should unlock correct amount based on elapsed time", async () => {
+
+            const withdrawAmount = ONE_TOKEN;
+            const withdrawAccount = owner;
+
+            const supplyBefore = await farm.balanceOf(
+                withdrawAccount
+            );
+
+            await time.increase(
+                defaultUnlockTime
+            );
+
+            await farm.farmWithdraw(
+                withdrawAmount,
+                {
+                    from: owner
+                }
+
+            );
+
+            const totalSupply = await farm.totalSupply();
+
+            assert.equal(
+                totalSupply,
+                supplyBefore - withdrawAmount
+            );
+        });
+
+        it("should not be able to withdraw as last farmer until rewards are still available", async () => {
+
+            await farm.farmDeposit(
+                defaultTokenAmount
+            );
+
+            await farm.setRewardRate(
+                10
+            );
+
+            const withdrawAccount = owner;
+
+            const possibleWithdraw = await farm.balanceOf(
+                withdrawAccount
+            );
+
+            await expectRevert(
+                farm.farmWithdraw(
+                    possibleWithdraw,
+                    {
+                        from: owner
+                    }
+                ),
+                "TimeLockFarmV2: STILL_EARNING"
+            );
+
+            await stakeToken.mint(
+                defaultTokenAmount,
+                {
+                    from: bob
+                }
+            );
+
+            await stakeToken.approve(
+                farm.address,
+                defaultTokenAmount,
+                {
+                    from: bob
+                }
+            );
+
+            await farm.farmDeposit(
+                defaultTokenAmount,
+                {
+                    from: bob
+                }
+            );
+
+            await time.increase(
+                defaultUnlockTime
             );
 
             await farm.farmWithdraw(
@@ -2069,12 +2329,16 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
             farm = result.farm;
         });
 
-        it("should not be able to exit until rewards are still available", async () => {
+        it("if all tokens unlock should not be able to exit until rewards are still available", async () => {
 
             const withdrawAccount = owner;
 
             const possibleWithdraw = await farm.balanceOf(
                 withdrawAccount
+            );
+
+            await time.increase(
+                defaultUnlockTime
             );
 
             await expectRevert(
@@ -2097,12 +2361,16 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should not be able to exit as last farmer until rewards are still available", async () => {
+        it("if all tokens unlocked should not be able to exit as last farmer until rewards are still available", async () => {
 
             const withdrawAccount = owner;
 
             const possibleWithdraw = await farm.balanceOf(
                 withdrawAccount
+            );
+
+            await time.increase(
+                defaultUnlockTime
             );
 
             await expectRevert(
@@ -2153,6 +2421,10 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
 
             const possibleWithdraw = await farm.balanceOf(
                 withdrawAccount
+            );
+
+            await time.increase(
+                defaultUnlockTime
             );
 
             await expectRevert(
@@ -2561,6 +2833,10 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
                 bob
             );
 
+            await time.increase(
+                defaultUnlockTime
+            );
+
             await farm.transfer(
                 alice,
                 depositedByBob,
@@ -2683,8 +2959,6 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
 
             const aliceDeposit = tokens("5000");
             const bobDeposit = tokens("5000");
-
-            const SECONDS_IN_DAY = 86400;
             const TIME_STEP = 100;
 
             await farm.farmDeposit(
@@ -2705,10 +2979,6 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
                 defaultRewardRate
             );
 
-            const supplyInFarmInitially = await rewardToken.balanceOf(
-                farm.address
-            );
-
             const depositedByAlice = await farm.balanceOf(
                 alice
             );
@@ -2723,7 +2993,7 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
             );
 
             await time.increase(
-                TIME_STEP
+                defaultUnlockTime
             );
 
             const earnedByBobBeforeTransfer = await farm.earned(
