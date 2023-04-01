@@ -35,9 +35,9 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
         stakeToken = await Token.new();
         rewardToken = await Token.new();
 
+        defaultUnlockTime = 0;
         defaultApprovalAmount = 100;
         defaultDurationInSeconds = 300;
-        defaultUnlockTime = 0;
 
         farm = await Farm.new(
             stakeToken.address,
