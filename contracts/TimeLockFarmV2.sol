@@ -18,7 +18,6 @@ contract TimeLockFarmV2 is TokenWrapper {
     uint256 public immutable timeLock;
     uint256 constant PRECISION = 1E18;
 
-    mapping(address => uint256) public unlockTime;
     mapping(address => uint256) public userRewards;
     mapping(address => uint256) public perTokenPaid;
 
@@ -518,7 +517,7 @@ contract TimeLockFarmV2 is TokenWrapper {
                 : remainingAmount;
 
             unlockedAmount += unlockAmount;
-            userStake.amount -= unlockAmount; // userStake.amount = amountToUnlock - unlockAmount;
+            userStake.amount -= unlockAmount;
 
             if (userStake.amount == 0) {
                 if (userStakes.length > 1) {
