@@ -178,6 +178,22 @@ contract TimeLockFarmV2 is TokenWrapper {
             + userRewards[_walletAddress];
     }
 
+    /**
+     * @dev Calculates amount of stakes for user wallet
+     */
+    function stakeCount(
+        address _walletAddress
+    )
+        external
+        view
+        returns (uint256)
+    {
+        Stake[] memory walletStakes = stakes[
+            _walletAddress
+        ];
+
+        return walletStakes.length;
+    }
     function unlockable(
         address _walletAddress
     )
