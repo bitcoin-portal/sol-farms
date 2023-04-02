@@ -194,6 +194,11 @@ contract TimeLockFarmV2 is TokenWrapper {
 
         return walletStakes.length;
     }
+
+    /**
+     * @dev Calculates unlockable amount for user wallet
+     * based on user stakes and current timestamp
+     */
     function unlockable(
         address _walletAddress
     )
