@@ -15,6 +15,7 @@ const tokens = (value) => {
 
 const ONE_TOKEN = tokens("1");
 const TWO_TOKENS = tokens("2");
+const FIVE_TOKENS = tokens("5");
 
 const MAX_VALUE = BN(2)
     .pow(BN(256))
@@ -226,6 +227,16 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
             assert.equal(
                 defaultDurationValue,
                 defaultDurationInSeconds
+            );
+        });
+
+        it("should have correct timeLock value", async () => {
+
+            const farmTimeLock = await farm.timeLock();
+
+            assert.equal(
+                farmTimeLock,
+                defaultUnlockTime
             );
         });
 
@@ -1563,7 +1574,52 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("if tokens locked user cannot withdraw them", async () => {
+        it("should have correct stake count", async () => {
+
+            const expectedAccount = owner;
+            const expectedCount = 1;
+
+            const userStakeCount = await farm.stakeCount(
+                expectedAccount
+            );
+
+            assert.equal(
+                userStakeCount,
+                expectedCount
+            );
+        });
+
+        it("should create stake object for account when stake created", async () => {
+
+            const expectedAccount = owner;
+            const expectedDeposit = defaultDepositAmount;
+
+            const timeLock = await farm.timeLock();
+            const stampAfterDeposit = await rewardToken.timestamp();
+
+            const stakeCount = await farm.stakeCount(
+                expectedAccount
+            );
+
+            const latestStakeIndex = stakeCount - 1;
+
+            const userStakeOne = await farm.stakes(
+                expectedAccount,
+                latestStakeIndex
+            );
+
+            assert.equal(
+                userStakeOne.amount.toString(),
+                expectedDeposit.toString()
+            );
+
+            assert.equal(
+                parseInt(userStakeOne.unlockTime),
+                parseInt(stampAfterDeposit) + parseInt(timeLock)
+            );
+        });
+
+        it("checks that if tokens are locked then user cannot withdraw them", async () => {
 
             const withdrawAmount = defaultDepositAmount;
             const withdrawAccount = owner;
@@ -1624,17 +1680,301 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should unlock correct amount based on elapsed time", async () => {
+        it("should unlock stakes only once unlock time passed for each stake", async () => {
 
-            const withdrawAmount = ONE_TOKEN;
             const withdrawAccount = owner;
+            const withdrawAmountOne = defaultDepositAmount;
+            const withdrawAmountTwo = FIVE_TOKENS;
+            const halfTime = defaultUnlockTime / 2
 
-            const supplyBefore = await farm.balanceOf(
+            assert.isAbove(
+                parseInt(withdrawAmountTwo),
+                parseInt(withdrawAmountOne)
+            );
+
+            await time.increase(
+                halfTime
+            );
+
+            await farm.farmDeposit(
+                withdrawAmountTwo
+            );
+
+            const userStakeCount = await farm.stakeCount(
                 withdrawAccount
+            );
+
+            assert.equal(
+                userStakeCount.toString(),
+                "2"
+            );
+
+            await time.increase(
+                halfTime
+            );
+
+            const unlockableFirstStake = await farm.unlockable(
+                withdrawAccount
+            );
+
+            assert.equal(
+                unlockableFirstStake,
+                withdrawAmountOne
+            );
+
+            await expectRevert(
+                farm.farmWithdraw(
+                    withdrawAmountTwo,
+                    {
+                        from: withdrawAccount
+                    }
+                ),
+                "TimeLockFarmV2: UNLOCK_INSUFFICIENT"
+            );
+
+            await farm.farmWithdraw(
+                withdrawAmountOne,
+                {
+                    from: withdrawAccount
+                }
+            );
+
+            const userStakeCountAgain = await farm.stakeCount(
+                withdrawAccount
+            );
+
+            assert.equal(
+                userStakeCountAgain.toString(),
+                "1"
+            );
+
+            const unlockableSecondStake = await farm.unlockable(
+                withdrawAccount
+            );
+
+            assert.equal(
+                unlockableSecondStake.toString(),
+                "0"
+            );
+
+            await expectRevert(
+                farm.farmWithdraw(
+                    withdrawAmountOne,
+                    {
+                        from: withdrawAccount
+                    }
+                ),
+                "TimeLockFarmV2: UNLOCK_INSUFFICIENT"
+            );
+
+            await expectRevert(
+                farm.farmWithdraw(
+                    withdrawAmountTwo,
+                    {
+                        from: withdrawAccount
+                    }
+                ),
+                "TimeLockFarmV2: UNLOCK_INSUFFICIENT"
+            );
+
+            await time.increase(
+                halfTime
+            );
+
+            const unlockableSecondStakeAgain = await farm.unlockable(
+                withdrawAccount
+            );
+
+            assert.equal(
+                unlockableSecondStakeAgain.toString(),
+                withdrawAmountTwo.toString()
+            );
+
+            await farm.farmWithdraw(
+                withdrawAmountTwo,
+                {
+                    from: withdrawAccount
+                }
+            );
+
+            const unlockableFinal = await farm.unlockable(
+                withdrawAccount
+            );
+
+            assert.equal(
+                unlockableFinal.toString(),
+                "0"
+            );
+
+            const finalStakeCount = await farm.stakeCount(
+                withdrawAccount
+            );
+
+            assert.equal(
+                finalStakeCount.toString(),
+                "0"
+            );
+        });
+
+        it("should reduce stake amount when withdrawing if stoke is unlocked", async () => {
+
+            const withdrawAccount = owner;
+            const withdrawAmount = tokens("2");
+            const halfAmount = tokens("1");
+
+            const stakeCount = await farm.stakeCount(
+                withdrawAccount
+            );
+
+            const latestStakeIndex = stakeCount - 1;
+            const userStake = await farm.stakes(
+                withdrawAccount,
+                latestStakeIndex
+            );
+
+            assert.equal(
+                userStake.amount.toString(),
+                withdrawAmount.toString()
+            );
+
+            const unlockableInitial = await farm.unlockable(
+                withdrawAccount
+            );
+
+            assert.equal(
+                unlockableInitial.toString(),
+                "0"
             );
 
             await time.increase(
                 defaultUnlockTime
+            );
+
+            const unlockableFirstStake = await farm.unlockable(
+                withdrawAccount
+            );
+
+            assert.equal(
+                unlockableFirstStake,
+                withdrawAmount
+            );
+
+            await farm.farmWithdraw(
+                halfAmount,
+                {
+                    from: withdrawAccount
+                }
+            );
+
+            const userStakeCountAgain = await farm.stakeCount(
+                withdrawAccount
+            );
+
+            assert.equal(
+                userStakeCountAgain.toString(),
+                "1"
+            );
+
+            const userStakeAgain = await farm.stakes(
+                withdrawAccount,
+                latestStakeIndex
+            );
+
+            assert.isBelow(
+                parseInt(userStakeAgain.amount),
+                parseInt(withdrawAmount)
+            );
+
+            assert.equal(
+                userStakeAgain.amount.toString(),
+                halfAmount.toString()
+            );
+
+            await expectRevert(
+                farm.farmWithdraw(
+                    withdrawAmount,
+                    {
+                        from: withdrawAccount
+                    }
+                ),
+                "TimeLockFarmV2: UNLOCK_INSUFFICIENT"
+            );
+
+            await farm.farmWithdraw(
+                halfAmount,
+                {
+                    from: withdrawAccount
+                }
+            );
+
+            const unlockableFinal = await farm.unlockable(
+                withdrawAccount
+            );
+
+            assert.equal(
+                unlockableFinal.toString(),
+                "0"
+            );
+
+            const finalStakeCount = await farm.stakeCount(
+                withdrawAccount
+            );
+
+            assert.equal(
+                finalStakeCount.toString(),
+                "0"
+            );
+        });
+
+        it("should unlock stake only once unlock time passed", async () => {
+
+            const withdrawAccount = owner;
+            const withdrawAmount = defaultDepositAmount;
+            const halfTime = defaultUnlockTime / 2;
+
+            const unlockableStepOne = await farm.unlockable(
+                withdrawAccount
+            );
+
+            assert.equal(
+                unlockableStepOne.toString(),
+                "0"
+            );
+
+            await time.increase(
+                halfTime
+            );
+
+            const unlockableStepTwo = await farm.unlockable(
+                withdrawAccount
+            );
+
+            assert.equal(
+                unlockableStepTwo.toString(),
+                "0"
+            );
+
+            await expectRevert(
+                farm.farmWithdraw(
+                    withdrawAmount,
+                    {
+                        from: withdrawAccount
+                    }
+                ),
+                "TimeLockFarmV2: UNLOCK_INSUFFICIENT"
+            );
+
+            await time.increase(
+                halfTime
+            );
+
+            const unlockableStepThree = await farm.unlockable(
+                withdrawAccount
+            );
+
+            assert.equal(
+                unlockableStepThree,
+                withdrawAmount
             );
 
             await farm.farmWithdraw(
@@ -1642,14 +1982,6 @@ contract("TimeLockFarmV2", ([owner, alice, bob, chad, random]) => {
                 {
                     from: owner
                 }
-
-            );
-
-            const totalSupply = await farm.totalSupply();
-
-            assert.equal(
-                totalSupply,
-                supplyBefore - withdrawAmount
             );
         });
 
