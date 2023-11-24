@@ -255,11 +255,12 @@ contract PrivateFarm2X is TokenWrapper {
             + userRewardsB[_walletAddress];
     }
 
-    function createAllocation(
+    function makeDepositForUser(
         address _stakeOwner,
         uint256 _stakeAmount
     )
         external
+        onlyOwner
     {
         _farmDeposit(
             _stakeOwner,
@@ -267,7 +268,7 @@ contract PrivateFarm2X is TokenWrapper {
         );
     }
 
-    function createBulkAllocation(
+    function makeDepositForUserBulk(
         address[] calldata _stakeOwners,
         uint256[] calldata _stakeAmounts
     )
