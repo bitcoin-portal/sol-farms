@@ -199,7 +199,7 @@ contract PrivateFarm2X is TokenWrapper {
         view
         returns (uint256)
     {
-        if (_totalStaked == 0) {
+        if (_totalStakedSQRT == 0) {
             return perTokenStoredB;
         }
 
@@ -209,7 +209,7 @@ contract PrivateFarm2X is TokenWrapper {
         uint256 extraFund = timeFrame
             * rewardRateB
             * PRECISION
-            / _totalStaked;
+            / _totalStakedSQRT;
 
         return perTokenStoredB
             + extraFund;
@@ -249,7 +249,9 @@ contract PrivateFarm2X is TokenWrapper {
         uint256 difference = rewardPerTokenB()
             - perTokenPaidB[_walletAddress];
 
-        return _balances[_walletAddress]
+        return Babylonian.sqrt(
+                _balances[_walletAddress]
+            )
             * difference
             / PRECISION
             + userRewardsB[_walletAddress];
