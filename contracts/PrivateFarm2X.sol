@@ -352,6 +352,25 @@ contract PrivateFarm2X is TokenWrapper {
         );
     }
 
+    function claimReward()
+        external
+    {
+        _claimReward(
+            msg.sender
+        );
+    }
+
+    function farmWithdraw(
+        uint256 _withdrawAmount
+    )
+        external
+    {
+        _farmWithdraw(
+            msg.sender,
+            _withdrawAmount
+        );
+    }
+
     /**
      * @dev Allows to withdraw staked tokens and claim rewards
      */
