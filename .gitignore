@@ -105,5 +105,6 @@ dist
 
 artifacts/*
 cache/*
-out/
+out/*
+forge-cache/solidity-files-cache.json
 forge-cache/solidity-files-cache.json
