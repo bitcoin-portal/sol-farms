@@ -2,7 +2,7 @@
 
 pragma solidity =0.8.23;
 
-import "forge-std/Test.sol";
+import "lib/forge-std/src/Test.sol";
 import "./Counter.sol";
 
 contract CounterTest is Test {
