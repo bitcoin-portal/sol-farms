@@ -2,7 +2,7 @@
 
 pragma solidity =0.8.23;
 
-import "lib/forge-std/src/Test.sol";
+import "forge-std/Test.sol";
 import "./PrivateFarm2X.sol";
 
 contract PrivateFarmTest is Test {
