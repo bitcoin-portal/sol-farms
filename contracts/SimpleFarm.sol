@@ -52,9 +52,9 @@ contract SimpleFarm is TokenWrapper {
         _;
     }
 
-    modifier updateSender(address sender) {
-        userRewards[sender] = earned(sender);
-        perTokenPaid[sender] = perTokenStored;
+    modifier updateSender(address _sender) {
+        userRewards[_sender] = earned(_sender);
+        perTokenPaid[_sender] = perTokenStored;
         _;
     }
 
