@@ -6,11 +6,15 @@ require("./utils");
 
 const _BN = web3.utils.BN;
 const BN = (value) => {
-    return new _BN(value)
+    return new _BN(
+        value
+    );
 }
 
 const tokens = (value) => {
-    return web3.utils.toWei(value);
+    return web3.utils.toWei(
+        value
+    );
 }
 
 const ONE_TOKEN = tokens("1");

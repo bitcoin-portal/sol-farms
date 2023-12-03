@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: -- BCOM --
 
-pragma solidity =0.8.19;
+pragma solidity =0.8.23;
 
 interface IERC20 {
 
@@ -20,6 +20,16 @@ interface IERC20 {
     function transferFrom(
         address sender,
         address recipient,
+        uint256 amount
+    )
+        external
+        returns (bool);
+
+    /**
+     * @dev Interface for approve function
+     */
+    function approve(
+        address spender,
         uint256 amount
     )
         external

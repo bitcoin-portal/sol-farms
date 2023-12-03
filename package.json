@@ -11,7 +11,10 @@
 		"test-timelock": "npx hardhat test test/timelock.test.js",
 		"test-timelock-v2": "npx hardhat test test/timelock-v2.test.js",
 		"flatten-timelock": "npx hardhat flatten > TimeLockFarmV2.sol",
-		"coverage": "npx truffle run coverage --network development"
+		"coverage": "npx truffle run coverage --network development",
+		"foundry-size": "forge build --sizes",
+        "foundry-test-default": "forge test --gas-report -vvv",
+        "foundry-test-reports": "forge test --gas-report > gasreport.ansi -vvv"
 	},
 	"repository": {
 		"type": "git",
@@ -25,9 +28,9 @@
 	"homepage": "http://bitcoin.com/",
 	"devDependencies": {
 		"@nomicfoundation/hardhat-network-helpers": "^1.0.6",
-	    "@nomiclabs/hardhat-ethers": "^2.1.1",
-	    "@nomiclabs/hardhat-truffle5": "^2.0.7",
-	    "@nomiclabs/hardhat-web3": "^2.0.0",
+		"@nomiclabs/hardhat-ethers": "^2.1.1",
+		"@nomiclabs/hardhat-truffle5": "^2.0.7",
+		"@nomiclabs/hardhat-web3": "^2.0.0",
 		"chai": "^4.2.0",
 		"eslint": "^6.5.1",
 		"eslint-config-standard": "^14.1.1",
@@ -60,6 +63,7 @@
 		"yargs": "^16.2.0"
 	},
 	"dependencies": {
+		"@nomicfoundation/hardhat-foundry": "^1.0.3",
 		"@chainlink/contracts": "^0.4.1",
 		"@openzeppelin/contracts": "^4.6.0",
 		"@openzeppelin/test-helpers": "^0.5.13",

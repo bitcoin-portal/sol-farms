@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: -- BCOM --
 
-pragma solidity =0.8.19;
+pragma solidity =0.8.23;
 
 import "./SafeERC20.sol";
+import "./Babylonian.sol";
 
 contract TokenWrapper is SafeERC20 {
 
@@ -12,6 +13,8 @@ contract TokenWrapper is SafeERC20 {
     uint8 public constant decimals = 18;
 
     uint256 _totalStaked;
+    uint256 _totalStakedSQRT;
+
     mapping(address => uint256) _balances;
     mapping(address => mapping(address => uint256)) _allowances;
 
@@ -65,6 +68,11 @@ contract TokenWrapper is SafeERC20 {
         _totalStaked =
         _totalStaked + _amount;
 
+        _totalStakedSQRT =
+        _totalStakedSQRT + Babylonian.sqrt(
+            _amount
+        );
+
         unchecked {
             _balances[_address] =
             _balances[_address] + _amount;
@@ -89,6 +97,11 @@ contract TokenWrapper is SafeERC20 {
         unchecked {
             _totalStaked =
             _totalStaked - _amount;
+
+            _totalStakedSQRT =
+            _totalStakedSQRT - Babylonian.sqrt(
+                _amount
+            );
         }
 
         _balances[_address] =
