@@ -58,33 +58,36 @@ contract PrivateFarm2X is TokenWrapper {
 
     modifier updateUser() {
 
-        userRewardsA[msg.sender] = earnedA(
+        _updateUser(
             msg.sender
         );
-
-        userRewardsB[msg.sender] = earnedB(
-            msg.sender
-        );
-
-        perTokenPaidA[msg.sender] = perTokenStoredA;
-        perTokenPaidB[msg.sender] = perTokenStoredB;
         _;
     }
 
     modifier updateSender(
         address _sender
     ) {
-        userRewardsA[_sender] = earnedA(
+        _updateUser(
             _sender
         );
-
-        userRewardsB[_sender] = earnedB(
-            _sender
-        );
-
-        perTokenPaidA[_sender] = perTokenStoredA;
-        perTokenPaidB[_sender] = perTokenStoredB;
         _;
+    }
+
+    function _updateUser(
+        address _userAddress
+    )
+        private
+    {
+        userRewardsA[_userAddress] = earnedA(
+            _userAddress
+        );
+
+        userRewardsB[_userAddress] = earnedB(
+            _userAddress
+        );
+
+        perTokenPaidA[_userAddress] = perTokenStoredA;
+        perTokenPaidB[_userAddress] = perTokenStoredB;
     }
 
     event Staked(
@@ -270,43 +273,13 @@ contract PrivateFarm2X is TokenWrapper {
         );
     }
 
-    function makeDepositForUserBulk(
-        address[] calldata _stakeOwners,
-        uint256[] calldata _stakeAmounts
-    )
-        external
-        onlyManager
-    {
-        require(
-            _stakeOwners.length == _stakeAmounts.length,
-            "PrivateFarm2X: INVALID_INPUTS"
-        );
-
-        uint256 i;
-        uint256 l = _stakeOwners.length;
-
-        for (i; i < l;) {
-            _farmDeposit(
-                _stakeOwners[i],
-                _stakeAmounts[i]
-            );
-
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /**
-     * @dev Performs deposit of staked token into the farm
-     */
     function _farmDeposit(
         address _stakeOwner,
         uint256 _stakeAmount
     )
         private
         updateFarm()
-        updateUser()
+        updateSender(_stakeOwner)
     {
         _stake(
             _stakeAmount,
@@ -326,15 +299,49 @@ contract PrivateFarm2X is TokenWrapper {
         );
     }
 
+    function makeDepositForUserBulk(
+        address[] calldata _stakeOwners,
+        uint256[] calldata _stakeAmounts
+    )
+        external
+        onlyManager
+    {
+        require(
+            _stakeOwners.length == _stakeAmounts.length,
+            "PrivateFarm2X: INVALID_INPUTS"
+        );
+
+        uint256 i;
+        uint256 l = _stakeOwners.length;
+
+        while (i < l) {
+
+            _farmDeposit(
+                _stakeOwners[i],
+                _stakeAmounts[i]
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
     /**
      * @dev Allows to withdraw staked tokens and claim rewards
      */
     function exitFarm()
         external
     {
-        _exitFarm(
+        uint256 withdrawAmount = _balances[
             msg.sender
+        ];
+
+        farmWithdraw(
+            withdrawAmount
         );
+
+        claimReward();
     }
 
     /**
@@ -347,13 +354,57 @@ contract PrivateFarm2X is TokenWrapper {
         external
         onlyOwner
     {
-        _exitFarm(
+        _exitFarmForced(
             _withdrawAddress
         );
     }
 
-    function claimReward()
+    function _exitFarmForced(
+        address _withdrawAddress
+    )
+        private
+        updateFarm()
+        updateSender(_withdrawAddress)
+    {
+        uint256 withdrawAmount = _balances[
+            msg.sender
+        ];
+
+        _claimReward(
+            _withdrawAddress
+        );
+
+        _farmWithdraw(
+            _withdrawAddress,
+            withdrawAmount
+        );
+    }
+
+    function exitentireFarmForcedBulk(
+        address[] calldata _withdrawAddresses
+    )
         external
+        onlyOwner
+    {
+        uint256 i;
+        uint256 l = _withdrawAddresses.length;
+
+        while (i < l) {
+
+            _exitFarmForced(
+                _withdrawAddresses[i]
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function claimReward()
+        public
+        updateFarm()
+        updateUser()
     {
         _claimReward(
             msg.sender
@@ -363,29 +414,13 @@ contract PrivateFarm2X is TokenWrapper {
     function farmWithdraw(
         uint256 _withdrawAmount
     )
-        external
+        public
+        updateFarm()
+        updateUser()
     {
         _farmWithdraw(
             msg.sender,
             _withdrawAmount
-        );
-    }
-
-    /**
-     * @dev Allows to withdraw staked tokens and claim rewards
-     */
-    function _exitFarm(
-        address _exitAddress
-    )
-        private
-    {
-        _claimReward(
-            _exitAddress
-        );
-
-        _farmWithdraw(
-            _exitAddress,
-            _balances[_exitAddress]
         );
     }
 
@@ -396,8 +431,6 @@ contract PrivateFarm2X is TokenWrapper {
         address _claimAddress
     )
         private
-        updateFarm()
-        updateUser()
         returns (
             uint256 rewardAmountA,
             uint256 rewardAmountB
@@ -455,16 +488,7 @@ contract PrivateFarm2X is TokenWrapper {
         uint256 _withdrawAmount
     )
         private
-        updateFarm()
-        updateUser()
     {
-        if (block.timestamp < periodFinished) {
-            require(
-                _totalStaked > _withdrawAmount,
-                "PrivateFarm2X: STILL_EARNING"
-            );
-        }
-
         _withdraw(
             _withdrawAmount,
             _withdrawAddress
@@ -542,7 +566,8 @@ contract PrivateFarm2X is TokenWrapper {
 
     /**
      * @dev Allows to recover ANY tokens
-     * from the private farm contract
+     * from the private farm contract.
+     * God mode feature for admin.
      */
     function recoverTokens(
         IERC20 tokenAddress,
