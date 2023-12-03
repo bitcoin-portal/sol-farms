@@ -44,6 +44,17 @@ contract TokenWrapper is SafeERC20 {
     }
 
     /**
+     * @dev Returns SQR tracker for total staked amount
+     */
+    function totalSupplySQR()
+        external
+        view
+        returns (uint256)
+    {
+        return _totalStakedSQRT;
+    }
+
+    /**
      * @dev Returns staked amount by wallet address
      */
     function balanceOf(
