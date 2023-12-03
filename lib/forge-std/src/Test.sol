@@ -24,7 +24,7 @@ import {Vm} from "./Vm.sol";
 
 // 📦 BOILERPLATE
 import {TestBase} from "./Base.sol";
-import {DSTest} from "../lib/ds-test/src/test.sol";
+import {DSTest} from "ds-test/test.sol";
 
 // ⭐️ TEST
 // Note: DSTest and any contracts that inherit it must be inherited first, https://github.com/foundry-rs/forge-std/pull/241
