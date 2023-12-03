@@ -10,9 +10,9 @@ optimizer_runs = 2
 evm_version ="shanghai"
 [invariant]
 fail_on_revert = true
-eth-rpc-url = "https://mainnet.infura.io/v3/121c74e81cc249fb82a35814aeae26d7"
+eth-rpc-url = "https://eth.llamarpc.com"
 [rpc_endpoints]
-mainnet = "https://mainnet.infura.io/v3/121c74e81cc249fb82a35814aeae26d7"
+mainnet = "https://eth.llamarpc.com"
 polygon = "https://polygon-rpc.com"
 
 
