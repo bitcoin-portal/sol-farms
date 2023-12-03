@@ -6,13 +6,15 @@
 		"chain": "ganache-cli --defaultBalanceEther 10000000000 -i 5777 -p 9545 -l 12500000 -m \"urban prevent meadow draft involve security curtain robot brick question try scatter\"",
 		"compile": "hardhat compile",
 		"test": "npx hardhat test",
-		"foundry-size": "forge build --sizes",
 		"test-token": "npx hardhat test test/token.test.js",
 		"test-farms": "npx hardhat test test/farms.test.js",
 		"test-timelock": "npx hardhat test test/timelock.test.js",
 		"test-timelock-v2": "npx hardhat test test/timelock-v2.test.js",
 		"flatten-timelock": "npx hardhat flatten > TimeLockFarmV2.sol",
-		"coverage": "npx truffle run coverage --network development"
+		"coverage": "npx truffle run coverage --network development",
+		"foundry-size": "forge build --sizes",
+        "foundry-test-default": "forge test --gas-report -vvv",
+        "foundry-test-reports": "forge test --gas-report > gasreport.ansi -vvv"
 	},
 	"repository": {
 		"type": "git",
