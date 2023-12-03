@@ -8,6 +8,7 @@
 		"test": "npx hardhat test",
 		"test-token": "npx hardhat test test/token.test.js",
 		"test-farms": "npx hardhat test test/farms.test.js",
+		"test-private": "npx hardhat test test/private.test.js",
 		"test-timelock": "npx hardhat test test/timelock.test.js",
 		"test-timelock-v2": "npx hardhat test test/timelock-v2.test.js",
 		"flatten-timelock": "npx hardhat flatten > TimeLockFarmV2.sol",
