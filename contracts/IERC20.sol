@@ -24,4 +24,14 @@ interface IERC20 {
     )
         external
         returns (bool);
+
+    /**
+     * @dev Interface for approve function
+     */
+    function approve(
+        address spender,
+        uint256 amount
+    )
+        external
+        returns (bool);
 }
