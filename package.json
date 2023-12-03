@@ -6,6 +6,7 @@
 		"chain": "ganache-cli --defaultBalanceEther 10000000000 -i 5777 -p 9545 -l 12500000 -m \"urban prevent meadow draft involve security curtain robot brick question try scatter\"",
 		"compile": "hardhat compile",
 		"test": "npx hardhat test",
+		"foundry-size": "forge build --sizes",
 		"test-token": "npx hardhat test test/token.test.js",
 		"test-farms": "npx hardhat test test/farms.test.js",
 		"test-timelock": "npx hardhat test test/timelock.test.js",
@@ -25,9 +26,9 @@
 	"homepage": "http://bitcoin.com/",
 	"devDependencies": {
 		"@nomicfoundation/hardhat-network-helpers": "^1.0.6",
-	    "@nomiclabs/hardhat-ethers": "^2.1.1",
-	    "@nomiclabs/hardhat-truffle5": "^2.0.7",
-	    "@nomiclabs/hardhat-web3": "^2.0.0",
+		"@nomiclabs/hardhat-ethers": "^2.1.1",
+		"@nomiclabs/hardhat-truffle5": "^2.0.7",
+		"@nomiclabs/hardhat-web3": "^2.0.0",
 		"chai": "^4.2.0",
 		"eslint": "^6.5.1",
 		"eslint-config-standard": "^14.1.1",
@@ -60,6 +61,7 @@
 		"yargs": "^16.2.0"
 	},
 	"dependencies": {
+		"@nomicfoundation/hardhat-foundry": "^1.0.3",
 		"@chainlink/contracts": "^0.4.1",
 		"@openzeppelin/contracts": "^4.6.0",
 		"@openzeppelin/test-helpers": "^0.5.13",
