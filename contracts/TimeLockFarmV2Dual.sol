@@ -361,18 +361,18 @@ contract TimeLockFarmV2Dual is TokenWrapper {
      * @dev Forced withdrawal of staked tokens and claim rewards
      * for the specified wallet address if leaving company or...
      */
-    function destoryStaker(
+    function destroyStaker(
         address _withdrawAddress
     )
         external
         onlyOwner
     {
-        _destoryStaker(
+        _destroyStaker(
             _withdrawAddress
         );
     }
 
-    function _destoryStaker(
+    function _destroyStaker(
         address _withdrawAddress
     )
         private
@@ -395,7 +395,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         ];
     }
 
-    function destoryStakerBulk(
+    function destroyStakerBulk(
         address[] calldata _withdrawAddresses
     )
         external
@@ -406,7 +406,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
 
         while (i < l) {
 
-            _destoryStaker(
+            _destroyStaker(
                 _withdrawAddresses[i]
             );
 
