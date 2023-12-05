@@ -612,7 +612,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 tokenAmount
     )
         external
-        onlyOwner
+        onlyManager
     {
         safeTransfer(
             tokenAddress,
