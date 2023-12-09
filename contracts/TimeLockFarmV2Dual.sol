@@ -508,11 +508,6 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             _claimAddress
         );
 
-        require(
-            rewardAmountA > 0 || rewardAmountB > 0,
-            "TimeLockFarmV2Dual: NOTHING_TO_CLAIM"
-        );
-
         delete userRewardsA[
             _claimAddress
         ];
