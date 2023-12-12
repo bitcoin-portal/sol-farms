@@ -343,11 +343,11 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         );
 
         stakes[_stakeOwner].push(
-            Stake(
-                _stakeAmount,
-                block.timestamp,
-                block.timestamp + _lockingTime
-            )
+            Stake({
+                amount: _stakeAmount,
+                createTime: block.timestamp,
+                unlockTime: block.timestamp + _lockingTime
+            })
         );
 
         safeTransferFrom(
