@@ -838,8 +838,8 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 unlockDuration = _stake.unlockTime
             - _stake.createTime;
 
-        uint256 elapsedTime = _stake.unlockTime
-            - block.timestamp;
+        uint256 elapsedTime = block.timestamp
+            - _stake.createTime;
 
         uint256 unlockableAmount = _stake.amount
             * elapsedTime
