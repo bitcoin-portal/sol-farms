@@ -34,6 +34,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
 
     struct Stake {
         uint256 amount;
+        uint256 createTime;
         uint256 unlockTime;
     }
 
@@ -236,7 +237,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 difference = rewardPerTokenA()
             - perTokenPaidA[_walletAddress];
 
-        return _balances[_walletAddress]
+        return unlockable(_walletAddress)
             * difference
             / PRECISION
             + userRewardsA[_walletAddress];
@@ -257,7 +258,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             - perTokenPaidB[_walletAddress];
 
         return Babylonian.sqrt(
-                _balances[_walletAddress]
+                unlockable(_walletAddress)
             )
             * difference
             / PRECISION
@@ -290,17 +291,22 @@ contract TimeLockFarmV2Dual is TokenWrapper {
     )
         public
         view
-        returns (uint256 unlockableAmount)
+        returns (uint256 totalAmount)
     {
         Stake[] memory walletStakes = stakes[
             _walletAddress
         ];
 
+        uint256 i;
         uint256 length = walletStakes.length;
 
-        for (uint256 i = 0; i < length; ++i) {
-            if (block.timestamp < walletStakes[i].unlockTime) continue;
-            unlockableAmount += walletStakes[i].amount;
+        while (i < length) {
+            unchecked {
+                totalAmount += _calculateUnlockableAmount(
+                    walletStakes[i]
+                );
+                ++i;
+            }
         }
     }
 
@@ -339,6 +345,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         stakes[_stakeOwner].push(
             Stake(
                 _stakeAmount,
+                block.timestamp,
                 block.timestamp + _lockingTime
             )
         );
@@ -506,6 +513,11 @@ contract TimeLockFarmV2Dual is TokenWrapper {
 
         rewardAmountB = earnedB(
             _claimAddress
+        );
+
+        require(
+            rewardAmountA > 0 || rewardAmountB > 0,
+            "TimeLockFarmV2Dual: NOTHING_TO_CLAIM"
         );
 
         delete userRewardsA[
@@ -764,30 +776,38 @@ contract TimeLockFarmV2Dual is TokenWrapper {
 
             Stake storage userStake = userStakes[i];
 
-            if (block.timestamp < userStake.unlockTime) {
-                i++;
-                continue;
-            }
+            uint256 unlockableAmount = _calculateUnlockableAmount(
+                userStake
+            );
 
-            uint256 amountToUnlock = userStake.amount;
-            uint256 remainingAmount = _withdrawAmount - unlockedAmount;
+            if (unlockableAmount > 0) {
 
-            uint256 unlockAmount = amountToUnlock < remainingAmount
-                ? amountToUnlock
-                : remainingAmount;
+                uint256 remainingAmount = _withdrawAmount
+                    - unlockedAmount;
 
-            unlockedAmount += unlockAmount;
-            userStake.amount -= unlockAmount;
+                uint256 unlockAmount = unlockableAmount < remainingAmount
+                    ? unlockableAmount
+                    : remainingAmount;
 
-            if (userStake.amount == 0) {
-                if (userStakes.length > 1) {
-                    userStakes[i] = userStakes[
-                        userStakes.length - 1
-                    ];
+                unlockedAmount += unlockAmount;
+                userStake.amount -= unlockAmount;
+
+                if (userStake.amount == 0) {
+                    if (userStakes.length > 1) {
+                        userStakes[i] = userStakes[
+                            userStakes.length - 1
+                            ];
+                    }
+                    userStakes.pop();
+                    if (userStakes.length == i) {
+                        break;
+                    }
+                } else {
+                    i++;
                 }
-                userStakes.pop();
-                if (userStakes.length == i) {
-                    break;
+
+                if (unlockedAmount == _withdrawAmount) {
+                    return;
                 }
             } else {
                 i++;
@@ -802,6 +822,30 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             unlockedAmount == _withdrawAmount,
             "TimeLockFarmV2Dual: UNLOCK_INSUFFICIENT"
         );
+    }
+
+    function _calculateUnlockableAmount(
+        Stake memory _stake
+    )
+        private
+        view
+        returns (uint256)
+    {
+        if (block.timestamp >= _stake.unlockTime) {
+            return _stake.amount;
+        }
+
+        uint256 unlockDuration = _stake.unlockTime
+            - _stake.unlockTime;
+
+        uint256 elapsedTime = _stake.unlockTime
+            - block.timestamp;
+
+        uint256 unlockableAmount = _stake.amount
+            * elapsedTime
+            / unlockDuration;
+
+        return unlockableAmount;
     }
 
     /**
@@ -825,6 +869,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         stakes[_recipient].push(
             Stake(
                 _amount,
+                block.timestamp,
                 block.timestamp
             )
         );
@@ -864,6 +909,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         stakes[_recipient].push(
             Stake(
                 _amount,
+                block.timestamp,
                 block.timestamp
             )
         );
