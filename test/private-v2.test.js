@@ -2537,7 +2537,7 @@ contract("SimpleFarm", ([
         });
 
         it("should revert if nothing to claim", async () => {
-            const stakerAddess = owner;
+
             const nonStakerAddress = bob;
             const timeJumpStep = 1;
 
