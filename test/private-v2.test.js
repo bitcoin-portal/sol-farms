@@ -425,6 +425,92 @@ contract("SimpleFarm", ([
             );
         });
 
+        it("should have correct unlockable amount based on time", async () => {
+
+            const defaultDuration = await farm.rewardDuration();
+            const expectedDefaultDuration = defaultDurationInSeconds;
+
+            assert.equal(
+                defaultDuration,
+                expectedDefaultDuration
+            );
+
+            await farm.makeDepositForUser(
+                alice,
+                10,
+                0
+            );
+
+            const unlockableAfterFirst = await farm.unlockable(
+                alice
+            );
+
+            console.log(unlockableAfterFirst.toString(), 'unlockableAfterFirst');
+
+            await farm.makeDepositForUser(
+                alice,
+                13,
+                10000
+            );
+
+            const unlockableAfterSecond = await farm.unlockable(
+                alice
+            );
+
+            console.log(unlockableAfterSecond.toString(), 'unlockableAfterSecond');
+
+            await time.increase(
+                defaultDuration + 1
+            );
+
+            const unlockableAfterTime = await farm.unlockable(
+                alice
+            );
+
+            console.log(unlockableAfterTime.toString(), 'unlockableAfterTime');
+
+            await time.increase(
+                defaultDuration + 1
+            );
+
+            const unlockableAfterTime2 = await farm.unlockable(
+                alice
+            );
+
+            console.log(unlockableAfterTime2.toString(), 'unlockableAfterTime2');
+
+
+            await time.increase(
+                defaultDuration + 1
+            );
+
+            const unlockableAfterTime3 = await farm.unlockable(
+                alice
+            );
+
+            console.log(unlockableAfterTime3.toString(), 'unlockableAfterTime2');
+
+            await time.increase(
+                defaultDuration + 1
+            );
+
+            const unlockableAfterTime4 = await farm.unlockable(
+                alice
+            );
+
+            console.log(unlockableAfterTime4.toString(), 'unlockableAfterTime2');
+
+            await time.increase(
+                defaultDuration + 1
+            );
+
+            const unlockableAfterTime5 = await farm.unlockable(
+                alice
+            );
+
+            console.log(unlockableAfterTime5.toString(), 'unlockableAfterTime2');
+        });
+
         it("should not be able to change farm duration during distribution", async () => {
 
             const defaultDuration = await farm.rewardDuration();
