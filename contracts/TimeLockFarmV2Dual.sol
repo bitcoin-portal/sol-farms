@@ -411,15 +411,11 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 i;
         uint256 l = _withdrawAddresses.length;
 
-        while (i < l) {
+        for (i; i < l; ++i) {
 
             _destroyStaker(
                 _withdrawAddresses[i]
             );
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
