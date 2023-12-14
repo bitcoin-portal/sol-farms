@@ -434,6 +434,38 @@ contract TimeLockFarmV2Dual is TokenWrapper {
                 * lockDuration;
         }
     }
+
+    function clearPastStamps()
+        external
+        onlyManager
+    {
+        uint256 i;
+        uint256 stamps = uniqueStamps.length;
+        uint256 uniqueStamp;
+
+        for (i; i < stamps; ++i) {
+
+            // store reference to unique timestamp
+            uniqueStamp = uniqueStamps[i];
+
+            // compare reference to current block timestamp
+            if (uniqueStamp < block.timestamp) {
+
+                // delete unique timestamp
+                delete unlockRates[
+                    uniqueStamp
+                ];
+
+                // overwrite old stamp with last item
+                uniqueStamps[i] = uniqueStamps[
+                    stamps - 1
+                ];
+
+                // remove last item from array
+                uniqueStamps.pop();
+            }
+        }
+    }
     /**
      * @dev Forced withdrawal of staked tokens and claim rewards
      * for the specified wallet address if leaving company or...
