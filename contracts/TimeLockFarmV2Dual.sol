@@ -401,6 +401,39 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             / _stakeDuration;
     }
 
+    function globalLocked(
+        bool _squared
+    )
+        public
+        view
+        returns (uint256 remainingAmount)
+    {
+        uint256 i;
+        uint256 stamps = uniqueStamps.length;
+
+        uint256 unlockTime;
+        uint256 unlockRate;
+        uint256 lockDuration;
+
+        for (i; i < stamps; ++i) {
+
+            unlockTime = uniqueStamps[i];
+
+            if (block.timestamp >= unlockTime) {
+                continue;
+            }
+
+            lockDuration = unlockTime
+                - block.timestamp;
+
+            unlockRate = _squared == false
+                ? unlockRates[unlockTime]
+                : unlockRatesSQRT[unlockTime];
+
+            remainingAmount += unlockRate
+                * lockDuration;
+        }
+    }
     /**
      * @dev Forced withdrawal of staked tokens and claim rewards
      * for the specified wallet address if leaving company or...
