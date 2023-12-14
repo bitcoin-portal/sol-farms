@@ -461,7 +461,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             // compare reference to current block timestamp
             if (uniqueStamp < block.timestamp) {
 
-                // delete unique timestamp
+                // delete unlock rate for timestamp
                 delete unlockRates[
                     uniqueStamp
                 ];
