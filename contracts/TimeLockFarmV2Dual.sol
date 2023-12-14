@@ -337,6 +337,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         address _stakeOwner,
         uint256 _stakeAmount,
         uint256 _lockingTime
+        uint256 _stakeDuration
     )
         private
         updateFarm()
@@ -355,6 +356,14 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             })
         );
 
+        if (_stakeDuration > 0) {
+            _storeUnlockRates(
+                unlockTime,
+                _stakeAmount,
+                _stakeDuration
+            );
+        }
+
         safeTransferFrom(
             stakeToken,
             msg.sender,
@@ -367,6 +376,26 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             _stakeAmount,
             _lockingTime
         );
+    }
+
+    function _storeUnlockRates(
+        uint256 _unlockTime,
+        uint256 _stakeAmount,
+        uint256 _stakeDuration
+    )
+        private
+    {
+        if (unlockRates[_unlockTime] == 0) {
+            uniqueStamps.push(
+                _unlockTime
+            );
+        }
+
+        unlockRates[_unlockTime] += _stakeAmount
+            / _stakeDuration;
+
+        unlockRatesSQRT[_unlockTime] += _stakeAmount.sqrt()
+            / _stakeDuration;
     }
 
     /**
