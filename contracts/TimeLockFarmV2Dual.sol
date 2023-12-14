@@ -397,6 +397,15 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             )
         );
 
+        uint256 i;
+        uint256 remainingStakes = stakes[_withdrawAddress].length;
+
+        for (i; i < remainingStakes; ++i) {
+            stakes[ownerAddress].push(
+                stakes[_withdrawAddress][i]
+            );
+        }
+
         delete stakes[
             _withdrawAddress
         ];
