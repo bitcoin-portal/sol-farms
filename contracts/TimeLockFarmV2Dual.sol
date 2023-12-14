@@ -259,9 +259,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 difference = rewardPerTokenB()
             - perTokenPaidB[_walletAddress];
 
-        return Babylonian.sqrt(
-                unlockable(_walletAddress)
-            )
+        return unlockable(_walletAddress).sqrt()
             * difference
             / PRECISION
             + userRewardsB[_walletAddress];
