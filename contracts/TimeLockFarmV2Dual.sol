@@ -30,6 +30,11 @@ contract TimeLockFarmV2Dual is TokenWrapper {
     mapping(address => uint256) public perTokenPaidA;
     mapping(address => uint256) public perTokenPaidB;
 
+    uint256[] public uniqueStamps;
+
+    mapping(uint256 => uint256) public unlockRates;
+    mapping(uint256 => uint256) public unlockRatesSQRT;
+
     address public ownerAddress;
     address public proposedOwner;
     address public managerAddress;
