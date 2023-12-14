@@ -423,7 +423,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
 
         uint256 unlockTime;
         uint256 unlockRate;
-        uint256 lockDuration;
+        uint256 remainingDuration;
 
         for (i; i < stamps; ++i) {
 
@@ -433,7 +433,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
                 continue;
             }
 
-            lockDuration = unlockTime
+            remainingDuration = unlockTime
                 - block.timestamp;
 
             unlockRate = _squared == false
@@ -441,7 +441,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
                 : unlockRatesSQRT[unlockTime];
 
             remainingAmount += unlockRate
-                * lockDuration;
+                * remainingDuration;
         }
     }
 
