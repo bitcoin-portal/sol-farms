@@ -6,6 +6,8 @@ import "./TokenWrapper.sol";
 
 contract TimeLockFarmV2Dual is TokenWrapper {
 
+    using Babylonian for uint256;
+
     IERC20 public immutable stakeToken;
     IERC20 public immutable rewardTokenA;
     IERC20 public immutable rewardTokenB;
