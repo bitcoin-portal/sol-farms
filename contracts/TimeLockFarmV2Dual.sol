@@ -197,10 +197,15 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 timeFrame = lastTimeRewardApplicable()
             - lastUpdateTime;
 
+        uint256 availableSupply = _totalStaked
+            - globalLocked({
+                _squared: false
+            });
+
         uint256 extraFund = timeFrame
             * rewardRateA
             * PRECISION
-            / _totalStaked;
+            / availableSupply;
 
         return perTokenStoredA
             + extraFund;
@@ -221,10 +226,15 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 timeFrame = lastTimeRewardApplicable()
             - lastUpdateTime;
 
+        uint256 availableSupply = _totalStakedSQRT
+            - globalLocked({
+                _squared: true
+            });
+
         uint256 extraFund = timeFrame
             * rewardRateB
             * PRECISION
-            / _totalStakedSQRT;
+            / availableSupply;
 
         return perTokenStoredB
             + extraFund;
