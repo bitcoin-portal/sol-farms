@@ -17,10 +17,22 @@ interface ITimeLockFarmV2Dual {
         external
         view
         returns (address);
+
+    function rewardTokenB()
+        external
+        view
+        returns (address);
+
+    function setRewardRates(
+        uint256 newRateA,
+        uint256 newRateB
+    )
+        external;
 }
 
 contract ManagerSetup {
 
+    IERC20 public immutable USDC;
     IERC20 public immutable VERSE;
 
     struct Allocation {
@@ -63,7 +75,16 @@ contract ManagerSetup {
             TIME_LOCK_FARM.stakeToken()
         );
 
+        USDC = IERC20(
+            TIME_LOCK_FARM.rewardTokenB()
+        );
+
         VERSE.approve(
+            address(TIME_LOCK_FARM),
+            type(uint256).max
+        );
+
+        USDC.approve(
             address(TIME_LOCK_FARM),
             type(uint256).max
         );
@@ -127,6 +148,19 @@ contract ManagerSetup {
         );
     }
 
+    function setRewardRates(
+        uint256 _newRateA,
+        uint256 _newRateB
+    )
+        external
+        onlyWorker
+    {
+        TIME_LOCK_FARM.setRewardRates(
+            _newRateA,
+            _newRateB
+        );
+    }
+
     /**
      * @dev Allows to recover ANY tokens
      * from the private farm contract.
@@ -142,20 +176,6 @@ contract ManagerSetup {
         IERC20(tokenAddress).transfer(
             owner,
             tokenAmount
-        );
-    }
-
-    function tokenApprove(
-        IERC20 _token,
-        address _spender,
-        uint256 _amount
-    )
-        external
-        onlyOwner
-    {
-        _token.approve(
-            _spender,
-            _amount
         );
     }
 
