@@ -6,6 +6,8 @@ import "./TokenWrapper.sol";
 
 contract TimeLockFarmV2Dual is TokenWrapper {
 
+    using Babylonian for uint256;
+
     IERC20 public immutable stakeToken;
     IERC20 public immutable rewardTokenA;
     IERC20 public immutable rewardTokenB;
@@ -27,6 +29,11 @@ contract TimeLockFarmV2Dual is TokenWrapper {
 
     mapping(address => uint256) public perTokenPaidA;
     mapping(address => uint256) public perTokenPaidB;
+
+    uint256[] public uniqueStamps;
+
+    mapping(uint256 => uint256) public unlockRates;
+    mapping(uint256 => uint256) public unlockRatesSQRT;
 
     address public ownerAddress;
     address public proposedOwner;
@@ -190,10 +197,15 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 timeFrame = lastTimeRewardApplicable()
             - lastUpdateTime;
 
+        uint256 availableSupply = _totalStaked
+            - globalLocked({
+                _squared: false
+            });
+
         uint256 extraFund = timeFrame
             * rewardRateA
             * PRECISION
-            / _totalStaked;
+            / availableSupply;
 
         return perTokenStoredA
             + extraFund;
@@ -214,10 +226,15 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 timeFrame = lastTimeRewardApplicable()
             - lastUpdateTime;
 
+        uint256 availableSupply = _totalStakedSQRT
+            - globalLocked({
+                _squared: true
+            });
+
         uint256 extraFund = timeFrame
             * rewardRateB
             * PRECISION
-            / _totalStakedSQRT;
+            / availableSupply;
 
         return perTokenStoredB
             + extraFund;
@@ -257,9 +274,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 difference = rewardPerTokenB()
             - perTokenPaidB[_walletAddress];
 
-        return Babylonian.sqrt(
-                unlockable(_walletAddress)
-            )
+        return unlockable(_walletAddress).sqrt()
             * difference
             / PRECISION
             + userRewardsB[_walletAddress];
@@ -316,7 +331,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
     function makeDepositForUser(
         address _stakeOwner,
         uint256 _stakeAmount,
-        uint256 _lockingTime
+        uint256 _stakeDuration
     )
         external
         onlyManager
@@ -324,14 +339,14 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         _farmDeposit(
             _stakeOwner,
             _stakeAmount,
-            _lockingTime
+            _stakeDuration
         );
     }
 
     function _farmDeposit(
         address _stakeOwner,
         uint256 _stakeAmount,
-        uint256 _lockingTime
+        uint256 _stakeDuration
     )
         private
         updateFarm()
@@ -342,13 +357,25 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             _stakeOwner
         );
 
+        uint256 createTime = block.timestamp;
+        uint256 unlockTime = createTime
+            + _stakeDuration;
+
         stakes[_stakeOwner].push(
             Stake({
                 amount: _stakeAmount,
-                createTime: block.timestamp,
-                unlockTime: block.timestamp + _lockingTime
+                createTime: createTime,
+                unlockTime: unlockTime
             })
         );
+
+        if (_stakeDuration > 0) {
+            _storeUnlockRates(
+                unlockTime,
+                _stakeAmount,
+                _stakeDuration
+            );
+        }
 
         safeTransferFrom(
             stakeToken,
@@ -360,10 +387,95 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         emit Staked(
             _stakeOwner,
             _stakeAmount,
-            _lockingTime
+            _stakeDuration
         );
     }
 
+    function _storeUnlockRates(
+        uint256 _unlockTime,
+        uint256 _stakeAmount,
+        uint256 _stakeDuration
+    )
+        private
+    {
+        if (unlockRates[_unlockTime] == 0) {
+            uniqueStamps.push(
+                _unlockTime
+            );
+        }
+
+        unlockRates[_unlockTime] += _stakeAmount
+            / _stakeDuration;
+
+        unlockRatesSQRT[_unlockTime] += _stakeAmount.sqrt()
+            / _stakeDuration;
+    }
+
+    function globalLocked(
+        bool _squared
+    )
+        public
+        view
+        returns (uint256 remainingAmount)
+    {
+        uint256 i;
+        uint256 stamps = uniqueStamps.length;
+
+        uint256 unlockTime;
+        uint256 unlockRate;
+        uint256 remainingDuration;
+
+        for (i; i < stamps; ++i) {
+
+            unlockTime = uniqueStamps[i];
+
+            if (block.timestamp >= unlockTime) {
+                continue;
+            }
+
+            remainingDuration = unlockTime
+                - block.timestamp;
+
+            unlockRate = _squared == false
+                ? unlockRates[unlockTime]
+                : unlockRatesSQRT[unlockTime];
+
+            remainingAmount += unlockRate
+                * remainingDuration;
+        }
+    }
+
+    function clearPastStamps()
+        external
+        onlyManager
+    {
+        uint256 i;
+        uint256 stamps = uniqueStamps.length;
+        uint256 uniqueStamp;
+
+        for (i; i < stamps; ++i) {
+
+            // store reference to unique timestamp
+            uniqueStamp = uniqueStamps[i];
+
+            // compare reference to current block timestamp
+            if (uniqueStamp < block.timestamp) {
+
+                // delete unlock rate for timestamp
+                delete unlockRates[
+                    uniqueStamp
+                ];
+
+                // overwrite old stamp with last item
+                uniqueStamps[i] = uniqueStamps[
+                    stamps - 1
+                ];
+
+                // remove last item from array
+                uniqueStamps.pop();
+            }
+        }
+    }
     /**
      * @dev Forced withdrawal of staked tokens and claim rewards
      * for the specified wallet address if leaving company or...
@@ -397,6 +509,15 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             )
         );
 
+        uint256 i;
+        uint256 remainingStakes = stakes[_withdrawAddress].length;
+
+        for (i; i < remainingStakes; ++i) {
+            stakes[ownerAddress].push(
+                stakes[_withdrawAddress][i]
+            );
+        }
+
         delete stakes[
             _withdrawAddress
         ];
@@ -411,15 +532,11 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 i;
         uint256 l = _withdrawAddresses.length;
 
-        while (i < l) {
+        for (i; i < l; ++i) {
 
             _destroyStaker(
                 _withdrawAddresses[i]
             );
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
