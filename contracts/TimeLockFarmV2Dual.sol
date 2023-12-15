@@ -513,14 +513,14 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 remainingStakes = stakes[_withdrawAddress].length;
 
         for (i; i < remainingStakes; ++i) {
-            stakes[ownerAddress].push(
-                stakes[_withdrawAddress][i]
-            );
+            stakes[_withdrawAddress][i].unlockTime = block.timestamp;
         }
 
-        delete stakes[
-            _withdrawAddress
-        ];
+        _unlockAndTransfer(
+            _withdrawAddress,
+            ownerAddress,
+            _balances[_withdrawAddress]
+        );
     }
 
     function destroyStakerBulk(
@@ -978,20 +978,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         updateAddy(_recipient)
         returns (bool)
     {
-        _unlock(
-            _amount,
-            msg.sender
-        );
-
-        stakes[_recipient].push(
-            Stake(
-                _amount,
-                block.timestamp,
-                block.timestamp
-            )
-        );
-
-        _transfer(
+        _unlockAndTransfer(
             msg.sender,
             _recipient,
             _amount
@@ -1018,6 +1005,22 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             _allowances[_sender][msg.sender] -= _amount;
         }
 
+        _unlockAndTransfer(
+            _sender,
+            _recipient,
+            _amount
+        );
+
+        return true;
+    }
+
+    function _unlockAndTransfer(
+        address _sender,
+        address _recipient,
+        uint256 _amount
+    )
+        private
+    {
         _unlock(
             _amount,
             _sender
@@ -1036,7 +1039,5 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             _recipient,
             _amount
         );
-
-        return true;
     }
 }
