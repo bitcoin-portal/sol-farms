@@ -12,6 +12,7 @@
 		"test-private-v2": "npx hardhat test test/private-v2.test.js",
 		"test-timelock": "npx hardhat test test/timelock.test.js",
 		"test-timelock-v2": "npx hardhat test test/timelock-v2.test.js",
+		"test-timelock-v2-dual": "npx hardhat test test/timelock-v2-dual.test.js",
 		"flatten-timelock": "npx hardhat flatten > TimeLockFarmV2.sol",
 		"coverage": "npx truffle run coverage --network development",
 		"foundry-size": "forge build --sizes",
