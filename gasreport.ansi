@@ -1,15 +1,15 @@
-Compiling 14 files with 0.8.23
-Solc 0.8.23 finished in 2.37s
+Compiling 13 files with 0.8.23
+Solc 0.8.23 finished in 2.84s
 Compiler run [32msuccessful![0m
 
 Running 2 tests for contracts/Counter.t.sol:CounterTest
 [32m[PASS][0m testIncrement() (gas: 30943)
-[32m[PASS][0m testSetNumber(uint256) (runs: 256, μ: 27063, ~: 28463)
-Test result: [32mok[0m. [32m2[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 21.69ms
+[32m[PASS][0m testSetNumber(uint256) (runs: 256, μ: 27841, ~: 28463)
+Test result: [32mok[0m. [32m2[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 19.51ms
 
 Running 1 test for contracts/PrivateFarm2X.t.sol:PrivateFarmTest
-[32m[PASS][0m testChangeDuration() (gas: 20056)
-Test result: [32mok[0m. [32m1[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 5.22s
+[32m[PASS][0m testChangeDuration() (gas: 20166)
+Test result: [32mok[0m. [32m1[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 1.97s
 | contracts/Counter.sol:Counter contract |                 |       |        |       |         |
 |----------------------------------------|-----------------|-------|--------|-------|---------|
 | Deployment Cost                        | Deployment Size |       |        |       |         |
@@ -23,10 +23,10 @@ Test result: [32mok[0m. [32m1[0m passed; [31m0[0m failed; [33m0[0m skipp
 | contracts/PrivateFarm2X.sol:PrivateFarm2X contract |                 |      |        |      |         |
 |----------------------------------------------------|-----------------|------|--------|------|---------|
 | Deployment Cost                                    | Deployment Size |      |        |      |         |
-| 1695577                                            | 8672            |      |        |      |         |
+| 1649928                                            | 8444            |      |        |      |         |
 | Function Name                                      | min             | avg  | median | max  | # calls |
-| rewardDuration                                     | 1218            | 2218 | 2218   | 3218 | 2       |
-| setRewardDuration                                  | 9209            | 9209 | 9209   | 9209 | 1       |
+| rewardDuration                                     | 1262            | 2262 | 2262   | 3262 | 2       |
+| setRewardDuration                                  | 9231            | 9231 | 9231   | 9231 | 1       |
 
 
 
