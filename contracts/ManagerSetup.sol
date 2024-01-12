@@ -32,10 +32,11 @@ interface ITimeLockFarmV2Dual {
 
 contract ManagerSetup {
 
-    IERC20 public immutable USDC;
     IERC20 public immutable VERSE;
+    IERC20 public immutable STABLECOIN;
 
     struct Allocation {
+        bool unlock20Percent;
         address stakeOwner;
         uint256 stakeAmount;
         uint256 vestingTime;
@@ -46,6 +47,7 @@ contract ManagerSetup {
     ITimeLockFarmV2Dual public immutable TIME_LOCK_FARM;
 
     address public owner;
+    bool public isInitialized;
 
     modifier onlyWorker() {
         require(
@@ -75,7 +77,7 @@ contract ManagerSetup {
             TIME_LOCK_FARM.stakeToken()
         );
 
-        USDC = IERC20(
+        STABLECOIN = IERC20(
             TIME_LOCK_FARM.rewardTokenB()
         );
 
@@ -84,7 +86,7 @@ contract ManagerSetup {
             type(uint256).max
         );
 
-        USDC.approve(
+        STABLECOIN.approve(
             address(TIME_LOCK_FARM),
             type(uint256).max
         );
@@ -93,6 +95,7 @@ contract ManagerSetup {
 
         allocations.push(
             Allocation({
+                unlock20Percent: true,
                 stakeOwner: 0x08A39aE0b0dA06fE824a65fA0A73C3126A82A0bA,
                 stakeAmount: 56_250_000,
                 vestingTime: fourYears
@@ -101,6 +104,7 @@ contract ManagerSetup {
 
         allocations.push(
             Allocation({
+                unlock20Percent: true,
                 stakeOwner: 0xB413C4cF16A50E45D4101380AA0EDC1859Aa0a03,
                 stakeAmount: 50_000_000,
                 vestingTime: fourYears
@@ -109,6 +113,7 @@ contract ManagerSetup {
 
         allocations.push(
             Allocation({
+                unlock20Percent: true,
                 stakeOwner: 0xA02351E83625c5185908835846B26719Fcd3d53F,
                 stakeAmount: 37_500_000,
                 vestingTime: fourYears
@@ -117,6 +122,7 @@ contract ManagerSetup {
 
         allocations.push(
             Allocation({
+                unlock20Percent: true,
                 stakeOwner: 0x641AD78BAca220C5BD28b51Ce8e0F495e85Fe689,
                 stakeAmount: 31_250_000,
                 vestingTime: fourYears
@@ -125,6 +131,7 @@ contract ManagerSetup {
 
         allocations.push(
             Allocation({
+                unlock20Percent: true,
                 stakeOwner: 0xE482Bd6f975fF1dda8f2FD375CA193DaCD38235a,
                 stakeAmount: 25_000_000,
                 vestingTime: fourYears
@@ -133,6 +140,7 @@ contract ManagerSetup {
 
         allocations.push(
             Allocation({
+                unlock20Percent: true,
                 stakeOwner: 0x717d52e84eF30875De52834603c112675CeDB7CA,
                 stakeAmount: 18_750_000,
                 vestingTime: fourYears
@@ -141,6 +149,7 @@ contract ManagerSetup {
 
         allocations.push(
             Allocation({
+                unlock20Percent: true,
                 stakeOwner: 0xa803c226c8281550454523191375695928DcFE92,
                 stakeAmount: 12_500_000,
                 vestingTime: fourYears
@@ -183,13 +192,26 @@ contract ManagerSetup {
         external
         onlyOwner
     {
+        require(
+            isInitialized == false,
+            "ManagerSetup: ALREADY_INITIALIZED"
+        );
+
+        isInitialized = true;
+
         uint256 i;
         uint256 l = allocations.length;
 
         while (i < l) {
-            _executeAllocation(
+            bool res = _executeAllocation(
                 allocations[i]
             );
+
+            require(
+                res == allocations[i].unlock20Percent,
+                "ManagerSetup: ALLOCATION_MALFORMED"
+            );
+
             unchecked {
                 ++i;
             }
@@ -200,18 +222,32 @@ contract ManagerSetup {
         Allocation memory allocation
     )
         internal
+        returns (bool)
     {
-        TIME_LOCK_FARM.makeDepositForUser({
-            _stakeOwner: allocation.stakeOwner,
-            _stakeAmount: get20Percent(allocation.stakeAmount),
-            _lockingTime: 0
-        });
+        if (allocation.unlock20Percent == true) {
+
+            TIME_LOCK_FARM.makeDepositForUser({
+                _stakeOwner: allocation.stakeOwner,
+                _stakeAmount: get20Percent(allocation.stakeAmount),
+                _lockingTime: 0
+            });
+
+            TIME_LOCK_FARM.makeDepositForUser({
+                _stakeOwner: allocation.stakeOwner,
+                _stakeAmount: get80Percent(allocation.stakeAmount),
+                _lockingTime: allocation.vestingTime
+            });
+
+            return true;
+        }
 
         TIME_LOCK_FARM.makeDepositForUser({
             _stakeOwner: allocation.stakeOwner,
-            _stakeAmount: get80Percent(allocation.stakeAmount),
+            _stakeAmount: allocation.stakeAmount,
             _lockingTime: allocation.vestingTime
         });
+
+        return false;
     }
 
     function get20Percent(
