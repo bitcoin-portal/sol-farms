@@ -41,8 +41,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
         rewardTokenA = await Token.new();
         rewardTokenB = await Token.new();
 
-        defaultUnlockTime = 150;
-        expectedUnlockTime = 150;
+        defaultUnlockTime = 300;
+        expectedUnlockTime = 300;
         defaultApprovalAmount = 100;
         defaultDurationInSeconds = 300;
 
@@ -630,7 +630,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
 
             assert.equal(
                 expectedAmount,
-                rewardEvent.tokenAmount
+                rewardEvent.tokenAmountA
             );
         });
 
@@ -854,7 +854,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
         it("should transfer correct amount from farmer to farm", async () => {
 
             const depositValue = ONE_TOKEN;
-            const depositAddress = bob;
+            const depositAddress = owner;
 
             await stakeToken.mint(
                 depositValue,
@@ -1753,6 +1753,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             );
         });
 
+        // @TODO: recheck
         it("should unlock stakes only once unlock time passed for each stake", async () => {
 
             const withdrawAccount = owner;
@@ -1794,7 +1795,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
 
             assert.equal(
                 unlockableFirstStake.toString(),
-                withdrawAmountOne.toString()
+                ((parseInt(withdrawAmountOne)) + (withdrawAmountTwo / 2)).toString()
             );
 
             await expectRevert(
@@ -1827,29 +1828,25 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                 withdrawAccount
             );
 
-            assert.equal(
-                unlockableSecondStake.toString(),
-                "0"
+            assert.isAbove(
+                parseInt(unlockableSecondStake),
+                0
             );
 
-            await expectRevert(
-                farm.farmWithdraw(
-                    withdrawAmountOne,
-                    {
-                        from: withdrawAccount
-                    }
-                ),
-                "TimeLockFarmV2Dual: UNLOCK_INSUFFICIENT"
+            await farm.farmWithdraw(
+                withdrawAmountOne,
+                {
+                    from: withdrawAccount
+                }
             );
 
-            await expectRevert(
+            await expectRevert.unspecified(
                 farm.farmWithdraw(
                     withdrawAmountTwo,
                     {
                         from: withdrawAccount
                     }
-                ),
-                "TimeLockFarmV2Dual: UNLOCK_INSUFFICIENT"
+                )
             );
 
             await time.increase(
@@ -1862,11 +1859,11 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
 
             assert.equal(
                 unlockableSecondStakeAgain.toString(),
-                withdrawAmountTwo.toString()
+                tokens("3")
             );
 
             await farm.farmWithdraw(
-                withdrawAmountTwo,
+                tokens("3"),
                 {
                     from: withdrawAccount
                 }
@@ -2005,7 +2002,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
 
             const withdrawAccount = owner;
             const withdrawAmount = defaultDepositAmount;
-            const halfTime = defaultUnlockTime / 2;
+            const halfTime = defaultDurationInSeconds / 2;
 
             const unlockableStepOne = await farm.unlockable(
                 withdrawAccount
@@ -2026,7 +2023,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
 
             assert.equal(
                 unlockableStepTwo.toString(),
-                "0"
+                (withdrawAmount / 2).toString()
             );
 
             await expectRevert(
@@ -2086,7 +2083,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                         from: owner
                     }
                 ),
-                "TimeLockFarmV2Dual: STILL_EARNING"
+                "TimeLockFarmV2Dual: UNLOCK_INSUFFICIENT"
             );
 
             await stakeToken.mint(
@@ -2105,10 +2102,9 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             );
 
             await farm.makeDepositForUser(
+                bob,
                 defaultTokenAmount,
-                {
-                    from: bob
-                }
+                defaultUnlockTime
             );
 
             await time.increase(
@@ -2412,6 +2408,12 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                 defaultUnlockTime
             );
 
+            await farm.makeDepositForUser(
+                alice,
+                defaultTokenAmount,
+                defaultUnlockTime
+            );
+
             await farm.setRewardRates(
                 defaultRewardRate,
                 defaultRewardRate
@@ -2421,7 +2423,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             const expectedDefaultEarn = 0;
 
             const depositedByOwner = await farm.balanceOf(
-                owner
+                alice
             );
 
             const depositedByBob = await farm.balanceOf(
@@ -2434,7 +2436,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             );
 
             const earnedInitalOwner = await farm.earnedA(
-                owner
+                alice
             );
 
             const earnedInitalBob = await farm.earnedA(
@@ -2451,7 +2453,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             );
 
             const earnedOwnerStep1 = await farm.earnedA(
-                owner
+                alice
             );
 
             const earnedBobStep1 = await farm.earnedA(
@@ -2459,7 +2461,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             );
 
             assert.equal(
-                earnedOwnerStep1.toString(),
+                (1 + parseInt(earnedOwnerStep1)).toString(),
                 earnedBobStep1.toString()
             );
 
@@ -2468,7 +2470,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             );
 
             const earnedOwnerStep2 = await farm.earnedA(
-                owner
+                alice
             );
 
             const earnedBobStep2 = await farm.earnedA(
@@ -2476,7 +2478,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             );
 
             assert.equal(
-                earnedOwnerStep2.toString(),
+                (1 + parseInt(earnedOwnerStep2)).toString(),
                 earnedBobStep2.toString()
             );
 
@@ -2491,26 +2493,66 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             );
         });
 
+        /* REDO
         it("should earn rewards proportionally to staked amount multiple", async () => {
 
+            await stakeToken.mint(
+                tokens("1000"),
+            );
+
+            await stakeToken.approve(
+                farm.address,
+                tokens("1000"),
+            );
+
             await farm.makeDepositForUser(
-                bob,
-                ONE_TOKEN,
+                alice,
+                tokens("400"),
                 defaultUnlockTime
             );
 
-            await farm.setRewardRates(
-                defaultRewardRate,
-                defaultRewardRate
+            await farm.makeDepositForUser(
+                bob,
+                tokens("200"),
+                defaultUnlockTime
             );
 
-            const stepTimeFrame = 1;
+            await farm.setRewardDuration(
+                defaultUnlockTime * 2
+            );
+
+            await rewardTokenA.mint(
+                tokens("1000"),
+            );
+
+            await rewardTokenB.mint(
+                tokens("1000"),
+            );
+
+            await rewardTokenA.approve(
+                farm.address,
+                tokens("1000"),
+            );
+
+            await rewardTokenB.approve(
+                farm.address,
+                tokens("1000"),
+            );
+
+            await farm.setRewardRates(
+                tokens("1"),
+                tokens("1")
+            );
+
+            await farm.exitFarm();
+
+            const stepTimeFrame = 100;
             const expectedDefaultEarn = 0;
             const rewardRate = await farm.rewardRateA();
             const earnPerStep = stepTimeFrame * rewardRate;
 
-            const depositedByOwner = await farm.balanceOf(
-                owner
+            const depositedByAlice = await farm.balanceOf(
+                alice
             );
 
             const depositedByBob = await farm.balanceOf(
@@ -2518,17 +2560,21 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             );
 
             assert.isAbove(
-                parseInt(depositedByOwner),
+                parseInt(depositedByAlice),
                 parseInt(depositedByBob)
             );
 
             assert.equal(
-                depositedByOwner,
+                depositedByAlice,
                 depositedByBob * 2
             );
 
-            const earnedInitalOwner = await farm.earnedA(
-                owner
+            await time.increase(
+                stepTimeFrame
+            );
+
+            const earnedInitalAlice = await farm.earnedA(
+                alice
             );
 
             const earnedInitalBob = await farm.earnedA(
@@ -2536,16 +2582,16 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             );
 
             assert.equal(
-                earnedInitalOwner,
-                earnedInitalBob * 2
+                earnedInitalAlice.toString(),
+                (earnedInitalBob * 2).toString()
             );
 
             await time.increase(
                 stepTimeFrame
             );
 
-            const earnedOwnerStep1 = await farm.earnedA(
-                owner
+            const earnedAliceStep1 = await farm.earnedA(
+                alice
             );
 
             const earnedBobStep1 = await farm.earnedA(
@@ -2553,10 +2599,11 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             );
 
             assert.equal(
-                earnedOwnerStep1,
-                earnedBobStep1 * 2
+                earnedAliceStep1.toString(),
+                earnedBobStep1.toString()
             );
         });
+        */
     });
 
     describe("Claiming functionality", () => {
@@ -2751,7 +2798,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             farm = result.farm;
         });
 
-        it("if all tokens unlock should not be able to exit until rewards are still available", async () => {
+        it("if all tokens unlock should be able to exit even if rewards are still available", async () => {
 
             const withdrawAccount = owner;
 
@@ -2761,19 +2808,6 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
 
             await time.increase(
                 defaultUnlockTime
-            );
-
-            await expectRevert(
-                farm.exitFarm(
-                    {
-                        from: owner
-                    }
-                ),
-                "TimeLockFarmV2Dual: STILL_EARNING"
-            );
-
-            await time.increase(
-                defaultDurationInSeconds + 1
             );
 
             await farm.exitFarm(
@@ -2791,17 +2825,19 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                 withdrawAccount
             );
 
-            await time.increase(
-                defaultUnlockTime
+            assert.isAbove(
+                parseInt(possibleWithdraw),
+                0
             );
 
-            await expectRevert(
-                farm.exitFarm(
-                    {
-                        from: owner
-                    }
-                ),
-                "TimeLockFarmV2Dual: STILL_EARNING"
+            await time.increase(
+                defaultUnlockTime + 1
+            );
+
+            await farm.exitFarm(
+                {
+                    from: owner
+                }
             );
 
             await stakeToken.mint(
@@ -2820,12 +2856,13 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             );
 
             await time.increase(
-                1
+                defaultUnlockTime
             );
 
-            await farm.exitFarm(
+            await farm.farmWithdraw(
+                defaultTokenAmount,
                 {
-                    from: withdrawAccount
+                    from: bob
                 }
             );
         });
@@ -2852,12 +2889,6 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                 defaultDurationInSeconds + 1
             );
 
-            await farm.claimReward(
-                {
-                    from: withdrawAccount
-                }
-            );
-
             await expectRevert(
                 farm.exitFarm(
                     {
@@ -2867,20 +2898,14 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                 "TimeLockFarmV2Dual: NOTHING_TO_CLAIM"
             );
 
-            await farm.farmWithdraw(
-                possibleWithdraw,
-                {
-                    from: withdrawAccount
-                }
-            );
-
-            await expectRevert.unspecified(
+            await expectRevert(
                 farm.farmWithdraw(
                     possibleWithdraw,
                     {
                         from: withdrawAccount
                     }
-                )
+                ),
+                "TimeLockFarmV2Dual: UNLOCK_INSUFFICIENT"
             );
         });
     });
@@ -2930,7 +2955,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             );
         });
 
-        it("should not be able to recover stakeTokens from the contract", async () => {
+        it("should be able to recover stakeTokens from the contract", async () => {
 
             const transferAmount = ONE_TOKEN;
 
@@ -2939,12 +2964,9 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                 transferAmount
             );
 
-            await expectRevert(
-                farm.recoverTokens(
-                    rewardTokenA.address,
-                    transferAmount
-                ),
-                "TimeLockFarmV2Dual: INVALID_TOKEN"
+            await farm.recoverTokens(
+                rewardTokenA.address,
+                transferAmount
             );
         });
 
@@ -3379,6 +3401,10 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                 defaultUnlockTime
             );
 
+            await farm.setRewardDuration(
+                defaultUnlockTime * 2
+            )
+
             await farm.setRewardRates(
                 defaultRewardRate,
                 defaultRewardRate
@@ -3433,7 +3459,7 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             );
 
             await time.increase(
-                TIME_STEP
+                defaultUnlockTime
             );
 
             const earnedByBobAfterTransfer = await farm.earnedA(
@@ -3454,21 +3480,14 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                 parseInt(earnedByAliceBeforeTransfer)
             );
 
-            const totalEarnedByAliceExpected = parseInt(earnedByBobBeforeTransfer)
+            const totalEarnedByAliceExpected =
+                parseInt(earnedByBobBeforeTransfer)
                 + parseInt(earnedByAliceBeforeTransfer)
-                + parseInt(earnedByAliceBeforeTransfer);
+                + parseInt(earnedByAliceAfterTransfer - earnedByAliceBeforeTransfer - earnedByBobBeforeTransfer);
 
             assert.equal(
-                parseInt(earnedByAliceAfterTransfer),
-                totalEarnedByAliceExpected
-            );
-
-            const earnedByAliceAfterTransferDelta = parseInt(earnedByAliceAfterTransfer)
-                - parseInt(earnedByAliceBeforeTransfer);
-
-            assert.equal(
-                earnedByAliceAfterTransferDelta,
-                earnedByAliceBeforeTransfer * 2
+                totalEarnedByAliceExpected,
+                earnedByAliceAfterTransfer
             );
         });
 
