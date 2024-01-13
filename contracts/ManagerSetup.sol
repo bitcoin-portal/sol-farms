@@ -281,6 +281,69 @@ contract ManagerSetup {
                 vestingTime: fourYears
             })
         );
+
+        allocations.push(
+            Allocation({
+                unlock20Percent: true,
+                stakeOwner: 0x4B34C734CE125c354F8dD4e457C85bF3DF1890d9,
+                stakeAmount: 12_500_000,
+                vestingTime: fourYears
+            })
+        );
+
+        allocations.push(
+            Allocation({
+                unlock20Percent: true,
+                stakeOwner: 0x4B34C734CE125c354F8dD4e457C85bF3DF1890d9,
+                stakeAmount: 12_500_000,
+                vestingTime: fourYears
+            })
+        );
+
+        allocations.push(
+            Allocation({
+                unlock20Percent: true,
+                stakeOwner: 0xf3C01C5e422C71d530BF7D584D879555afe5531f,
+                stakeAmount: 12_500_000,
+                vestingTime: fourYears
+            })
+        );
+
+        allocations.push(
+            Allocation({
+                unlock20Percent: true,
+                stakeOwner: 0x40E285282f239ca11522954d3d30d0371733762B,
+                stakeAmount: 12_500_000,
+                vestingTime: fourYears
+            })
+        );
+
+        allocations.push(
+            Allocation({
+                unlock20Percent: true,
+                stakeOwner: 0x6D11be994Ea09E49705E480D836e2E887f041C3D,
+                stakeAmount: 12_500_000,
+                vestingTime: fourYears
+            })
+        );
+
+        allocations.push(
+            Allocation({
+                unlock20Percent: true,
+                stakeOwner: 0xb76296e5db55E30a94ae61A857A0e5DF40c86ef8,
+                stakeAmount: 12_500_000,
+                vestingTime: fourYears
+            })
+        );
+
+        allocations.push(
+            Allocation({
+                unlock20Percent: true,
+                stakeOwner: 0x5cEDbA76c3987604c8c348E9accB9ca00d24F623,
+                stakeAmount: 12_500_000,
+                vestingTime: fourYears
+            })
+        );
     }
 
     function setRewardRates(
