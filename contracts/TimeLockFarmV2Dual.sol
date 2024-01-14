@@ -3,7 +3,6 @@
 pragma solidity =0.8.23;
 
 import "./TokenWrapper.sol";
-import "./ManagerSetup.sol";
 
 contract TimeLockFarmV2Dual is TokenWrapper {
 
@@ -166,14 +165,11 @@ contract TimeLockFarmV2Dual is TokenWrapper {
 
         ownerAddress = msg.sender;
         rewardDuration = _defaultDuration;
-
         ManagerSetup managerSetup = ManagerSetup(
             address(this)
-        );
+        managerAddress = msg.sender;
 
-        managerAddress = address(
-            managerSetup
-        );
+        rewardDuration = _defaultDuration;
     }
 
     /**
@@ -726,11 +722,11 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 tokenAmount
     )
         external
-        onlyManager
+        onlyOwner
     {
         safeTransfer(
             tokenAddress,
-            ownerAddress,
+            msg.sender,
             tokenAmount
         );
 
