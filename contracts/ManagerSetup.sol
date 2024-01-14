@@ -2,12 +2,12 @@
 
 pragma solidity =0.8.23;
 
-import "./IERC20.sol";
+import "./SafeERC20.sol";
 import "./ITimeLockFarmV2Dual.sol";
 
 import "./ManagerHelper.sol";
 
-contract ManagerSetup is ManagerHelper {
+contract ManagerSetup is ManagerHelper, SafeERC20 {
 
     IERC20 public immutable VERSE;
     IERC20 public immutable STABLECOIN;
