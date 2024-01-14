@@ -139,8 +139,9 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
         external
         onlyOwner
     {
-        IERC20(tokenAddress).transfer(
-            owner,
+        safeTransfer(
+            tokenAddress,
+            msg.sender,
             tokenAmount
         );
     }
