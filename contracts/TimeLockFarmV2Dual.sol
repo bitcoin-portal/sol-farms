@@ -520,7 +520,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 remainingStakes = stakes[_withdrawAddress].length;
 
         for (i; i < remainingStakes; ++i) {
-            stakes[_withdrawAddress][i].unlockTime = block.timestamp;
+            delete stakes[_withdrawAddress][i].unlockTime;
         }
 
         _unlockAndTransfer(
@@ -528,23 +528,6 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             ownerAddress,
             _balances[_withdrawAddress]
         );
-    }
-
-    function destroyStakerBulk(
-        address[] calldata _withdrawAddresses
-    )
-        external
-        onlyOwner
-    {
-        uint256 i;
-        uint256 l = _withdrawAddresses.length;
-
-        for (i; i < l; ++i) {
-
-            _destroyStaker(
-                _withdrawAddresses[i]
-            );
-        }
     }
 
     /**
