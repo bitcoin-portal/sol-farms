@@ -146,9 +146,14 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
         );
     }
 
+    /**
+     * @dev Performs a deposit for all users
+     * from the allocations array. This function
+     * can be called only once.
+     */
     function executeAllocations()
         external
-        onlyOwner
+        onlyWorker
     {
         require(
             isInitialized == false,
