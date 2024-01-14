@@ -94,6 +94,15 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
         */
     }
 
+    function setWorker(
+        address _newWorker
+    )
+        external
+        onlyOwner
+    {
+        worker = _newWorker;
+    }
+
     function setRewardRates(
         uint256 _newRateA,
         uint256 _newRateB
