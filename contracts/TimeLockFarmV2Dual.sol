@@ -164,9 +164,6 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         rewardTokenB = _rewardTokenB;
 
         ownerAddress = msg.sender;
-        rewardDuration = _defaultDuration;
-        ManagerSetup managerSetup = ManagerSetup(
-            address(this)
         managerAddress = msg.sender;
 
         rewardDuration = _defaultDuration;
