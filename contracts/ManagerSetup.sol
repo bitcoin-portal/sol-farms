@@ -102,6 +102,17 @@ contract ManagerSetup is ManagerHelper {
         );
     }
 
+    function setRewardDuration(
+        uint256 _newDuration
+    )
+        external
+        onlyOwner
+    {
+        TIME_LOCK_FARM.setRewardDuration(
+            _newDuration
+        );
+    }
+
     /**
      * @dev Allows to recover ANY tokens
      * from the private farm contract.
