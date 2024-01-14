@@ -120,7 +120,7 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
         uint256 _newDuration
     )
         external
-        onlyOwner
+        onlyWorker
     {
         TIME_LOCK_FARM.setRewardDuration(
             _newDuration
