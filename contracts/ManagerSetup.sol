@@ -12,21 +12,14 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
     IERC20 public immutable VERSE;
     IERC20 public immutable STABLECOIN;
 
-    address public immutable WORKER_ADDRESS;
+    address public owner;
+    address public worker;
+
     ITimeLockFarmV2Dual public immutable TIME_LOCK_FARM;
 
-    address public owner;
     bool public isInitialized;
 
     mapping (address => bool) public isAllocationExecuted;
-
-    modifier onlyWorker() {
-        require(
-            msg.sender == WORKER_ADDRESS,
-            "ManagerSetup: NOT_OWNER"
-        );
-        _;
-    }
 
     modifier onlyOwner() {
         require(
@@ -36,13 +29,25 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
         _;
     }
 
-    constructor(
-        ITimeLockFarmV2Dual _timeLockFarm
-    ) {
-        TIME_LOCK_FARM = _timeLockFarm;
-        WORKER_ADDRESS = msg.sender;
+    modifier onlyWorker() {
+        require(
+            msg.sender == worker,
+            "ManagerSetup: NOT_WORKER"
+        );
+        _;
+    }
 
-        owner = msg.sender;
+    constructor(
+        address _owner,
+        address _worker,
+        address _timeLockFarm
+    ) {
+        TIME_LOCK_FARM = ITimeLockFarmV2Dual(
+            _timeLockFarm
+        );
+
+        owner = _owner;
+        worker = _worker;
 
         VERSE = IERC20(
             TIME_LOCK_FARM.stakeToken()
