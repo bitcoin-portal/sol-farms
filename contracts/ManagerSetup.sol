@@ -159,6 +159,11 @@ contract ManagerSetup is ManagerHelper {
         uint256 l = allocations.length;
 
         while (i < l) {
+
+            _preventDuplicate(
+                allocations[i].stakeOwner
+            );
+
             bool res = _executeAllocation(
                 allocations[i]
             );
@@ -204,6 +209,19 @@ contract ManagerSetup is ManagerHelper {
         });
 
         return false;
+    }
+
+    function _preventDuplicate(
+        address _stakeOwner
+    )
+        internal
+    {
+        require(
+            isAllocationExecuted[_stakeOwner] == false,
+            "ManagerSetup: DUPLICATE_ALLOCATION"
+        );
+
+        isAllocationExecuted[_stakeOwner] = true;
     }
 
     function get20Percent(
