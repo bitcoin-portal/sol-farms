@@ -13,7 +13,7 @@ contract ManagerHelper {
 
     Allocation[] public allocations;
 
-    uint256 public constant EXPECTED_ALLOCATIONS = 89;
+    uint256 public constant EXPECTED_ALLOCATIONS = 88;
     uint256 public constant EXPECTED_TOTAL_TOKENS = 100_000_000 * 1E18;
 
     function _setupAllocations()
@@ -457,15 +457,6 @@ contract ManagerHelper {
             Allocation({
                 unlock20Percent: true,
                 stakeOwner: 0xd360c96496eBF32cF0C71d568c3E95dfcB5cB704,
-                stakeAmount: 12_500_000,
-                vestingTime: fourYears
-            })
-        );
-
-        allocations.push(
-            Allocation({
-                unlock20Percent: true,
-                stakeOwner: 0xdd9f62286433620a3884bF7614026371A4fA598E,
                 stakeAmount: 12_500_000,
                 vestingTime: fourYears
             })
