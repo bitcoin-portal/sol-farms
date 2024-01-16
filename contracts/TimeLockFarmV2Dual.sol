@@ -576,13 +576,13 @@ contract TimeLockFarmV2Dual is TokenWrapper {
     function exitFarm()
         external
     {
+        claimReward();
+
         farmWithdraw(
             unlockable(
                 msg.sender
             )
         );
-
-        claimReward();
     }
 
     function claimReward()
