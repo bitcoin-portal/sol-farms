@@ -185,6 +185,40 @@ contract TimeLockFarmV2DualTest is Test {
         );
     }
 
+    function testMakeDepositForUserThroughManager()
+        public
+    {
+        uint256 depositAmount = tokens(100_000);
+
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        verseToken.transfer(
+            address(manager),
+            depositAmount
+        );
+
+        uint256 balanceBefore = verseToken.balanceOf(
+            address(farm)
+        );
+
+        manager.makeDepositForUser({
+            _stakeOwner: ADMIN_ADDRESS,
+            _stakeAmount: depositAmount,
+            _lockingTime: DEFAULT_DURATION
+        });
+
+        uint256 balanceAfter = verseToken.balanceOf(
+            address(farm)
+        );
+
+        assertEq(
+            balanceAfter - balanceBefore,
+            depositAmount
+        );
+    }
+
     function testFarmWithdraw()
         public
     {
