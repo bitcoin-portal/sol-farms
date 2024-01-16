@@ -261,4 +261,23 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
     {
         return _amount * 80E16;
     }
+
+    /**
+     * @dev Allows to recover ANY tokens
+     * from the private farm contract.
+     * God mode feature for admin multisig.
+     */
+    function recoverTokens(
+        IERC20 tokenAddress,
+        uint256 tokenAmount
+    )
+        external
+        onlyOwner
+    {
+        safeTransfer(
+            tokenAddress,
+            msg.sender,
+            tokenAmount
+        );
+    }
 }
