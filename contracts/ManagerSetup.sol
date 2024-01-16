@@ -87,11 +87,17 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
             }
         }
 
-        require(
-            totalTokens == EXPECTED_TOTAL_TOKENS,
-            "ManagerSetup: TOTAL_TOKENS_MISMATCH"
-        );
-        */
+    /**
+     * @dev Sets the owner of the contract.
+     * Owner can perform only certain actions.
+     */
+    function setOwner(
+        address _newOwner
+    )
+        external
+        onlyOwner
+    {
+        owner = _newOwner;
     }
 
     /**
