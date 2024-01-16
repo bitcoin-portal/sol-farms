@@ -94,6 +94,10 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
         */
     }
 
+    /**
+     * @dev Sets the worker of the contract.
+     * Worker can perform only certain actions.
+     */
     function setWorker(
         address _newWorker
     )
@@ -103,6 +107,10 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
         worker = _newWorker;
     }
 
+    /**
+     * @dev Sets the reward rates for the
+     * private farm contract only by worker
+     */
     function setRewardRates(
         uint256 _newRateA,
         uint256 _newRateB
@@ -116,6 +124,10 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
         );
     }
 
+    /**
+     * @dev Sets the reward duration for the
+     * private farm contract only by worker
+     */
     function setRewardDuration(
         uint256 _newDuration
     )
@@ -128,9 +140,8 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
     }
 
     /**
-     * @dev Allows to recover ANY tokens
-     * from the private farm contract.
-     * God mode feature for admin multisig.
+     * @dev Performs a deposit for a user
+     * from the owner of the contract.
      */
     function recoverTokens(
         IERC20 tokenAddress,
