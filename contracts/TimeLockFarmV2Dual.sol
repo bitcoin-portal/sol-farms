@@ -326,7 +326,9 @@ contract TimeLockFarmV2Dual is TokenWrapper {
     }
 
     /**
-     * @dev Performs deposit of staked token into the farm
+     * @dev Performs deposit of staked token into the
+     * farm with specified locking duration in seconds for
+     * specified wallet address defined by the manager
      */
     function makeDepositForUser(
         address _stakeOwner,
@@ -335,20 +337,6 @@ contract TimeLockFarmV2Dual is TokenWrapper {
     )
         external
         onlyManager
-    {
-        _farmDeposit(
-            _stakeOwner,
-            _stakeAmount,
-            _stakeDuration
-        );
-    }
-
-    function _farmDeposit(
-        address _stakeOwner,
-        uint256 _stakeAmount,
-        uint256 _stakeDuration
-    )
-        private
         updateFarm()
         updateAddy(_stakeOwner)
     {
@@ -447,7 +435,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
 
     function clearPastStamps()
         external
-        onlyManager
+        onlyOwner
     {
         uint256 i;
         uint256 stamps = uniqueStamps.length;
@@ -485,16 +473,6 @@ contract TimeLockFarmV2Dual is TokenWrapper {
     )
         external
         onlyOwner
-    {
-        _destroyStaker(
-            _withdrawAddress
-        );
-    }
-
-    function _destroyStaker(
-        address _withdrawAddress
-    )
-        private
         updateFarm()
         updateAddy(_withdrawAddress)
     {
@@ -505,7 +483,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         _farmWithdraw(
             _withdrawAddress,
             unlockable(
-                msg.sender
+                _withdrawAddress
             )
         );
 
@@ -518,7 +496,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
 
         _unlockAndTransfer(
             _withdrawAddress,
-            ownerAddress,
+            msg.sender,
             _balances[_withdrawAddress]
         );
     }
@@ -885,7 +863,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
                     if (userStakes.length > 1) {
                         userStakes[i] = userStakes[
                             userStakes.length - 1
-                            ];
+                        ];
                     }
                     userStakes.pop();
                     if (userStakes.length == i) {
