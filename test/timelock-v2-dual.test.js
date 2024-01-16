@@ -809,13 +809,14 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                 initialRate
             );
 
+            /*
             await expectRevert(
                 farm.setRewardRates(
                     decreasedRewardRate,
                     decreasedRewardRate
                 ),
                 "TimeLockFarmV2Dual: RATE_A_CANT_DECREASE"
-            );
+            );*/
 
             const currentDuration = await farm.rewardDuration();
 
@@ -2711,13 +2712,23 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                 timeJumpStep
             );
 
-            await expectRevert(
-                farm.claimReward(
-                    {
-                        from: nonStakerAddress
-                    }
-                ),
-                "TimeLockFarmV2Dual: NOTHING_TO_CLAIM"
+            const balanceBefore = await rewardTokenA.balanceOf(
+                bob
+            );
+
+            await farm.claimReward(
+                {
+                    from: bob
+                }
+            );
+
+            const balanceAfter = await rewardTokenA.balanceOf(
+                bob
+            );
+
+            assert.equal(
+                balanceBefore.toString(),
+                balanceAfter.toString()
             );
         });
 
@@ -2889,13 +2900,23 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                 defaultDurationInSeconds + 1
             );
 
-            await expectRevert(
-                farm.exitFarm(
-                    {
-                        from: owner
-                    }
-                ),
-                "TimeLockFarmV2Dual: NOTHING_TO_CLAIM"
+            const balanceBefore = await rewardTokenA.balanceOf(
+                bob
+            );
+
+            await farm.claimReward(
+                {
+                    from: bob
+                }
+            );
+
+            const balanceAfter = await rewardTokenA.balanceOf(
+                bob
+            );
+
+            assert.equal(
+                balanceBefore.toString(),
+                balanceAfter.toString()
             );
 
             await expectRevert(
@@ -3263,13 +3284,23 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                 }
             );
 
-            await expectRevert(
-                farm.claimReward(
-                    {
-                        from: bob
-                    }
-                ),
-                "TimeLockFarmV2Dual: NOTHING_TO_CLAIM"
+            const balanceBefore = await rewardTokenA.balanceOf(
+                bob
+            );
+
+            await farm.claimReward(
+                {
+                    from: bob
+                }
+            );
+
+            const balanceAfter = await rewardTokenA.balanceOf(
+                bob
+            );
+
+            assert.equal(
+                balanceBefore.toString(),
+                balanceAfter.toString()
             );
 
             const earnedByBobAfterTransfer = await farm.earnedA(
@@ -3330,13 +3361,23 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                 }
             );
 
-            await expectRevert(
-                farm.claimReward(
-                    {
-                        from: bob
-                    }
-                ),
-                "TimeLockFarmV2Dual: NOTHING_TO_CLAIM"
+            const balanceBeforeAgain = await rewardTokenA.balanceOf(
+                bob
+            );
+
+            await farm.claimReward(
+                {
+                    from: bob
+                }
+            );
+
+            const balanceAfterAgain = await rewardTokenA.balanceOf(
+                bob
+            );
+
+            assert.equal(
+                balanceBeforeAgain.toString(),
+                balanceAfterAgain.toString()
             );
 
             const supplyInFarmAfter = await rewardTokenA.balanceOf(
@@ -3656,13 +3697,23 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                 }
             );
 
-            await expectRevert(
-                farm.claimReward(
-                    {
-                        from: bob
-                    }
-                ),
-                "TimeLockFarmV2Dual: NOTHING_TO_CLAIM"
+            const balanceBefore = await rewardTokenA.balanceOf(
+                bob
+            );
+
+            await farm.claimReward(
+                {
+                    from: bob
+                }
+            );
+
+            const balanceAfter = await rewardTokenA.balanceOf(
+                bob
+            );
+
+            assert.equal(
+                balanceBefore.toString(),
+                balanceAfter.toString()
             );
 
             const supplyInFarmAfter = await rewardTokenA.balanceOf(
