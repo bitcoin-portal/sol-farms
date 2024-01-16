@@ -86,6 +86,7 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
                 "ManagerSetup: UNIQUE_AMOUNT_MISMATCH"
             );
         }
+    }
 
     /**
      * @dev Sets the owner of the contract.
