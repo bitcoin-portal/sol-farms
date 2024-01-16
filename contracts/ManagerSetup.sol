@@ -19,7 +19,7 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
 
     bool public isInitialized;
 
-    mapping (address => bool) public isAllocationExecuted;
+    mapping(address => bool) public isAllocationExecuted;
 
     modifier onlyOwner() {
         require(
@@ -67,6 +67,7 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
             type(uint256).max
         );
 
+        _setupAmounts();
         _setupAllocations();
 
         require(
@@ -74,17 +75,16 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
             "ManagerSetup: ALLOCATIONS_COUNT_MISMATCH"
         );
 
-        /*
-        // Uncomment this code to check the total amount of tokens
-        uint256 i;
-        uint256 l = allocations.length;
-        uint256 totalTokens;
+        require(
+            initialTokensRequired == EXPECTED_TOTAL_TOKENS,
+            "ManagerSetup: EXPECTED_TOKENS_MISMATCH"
+        );
 
-        while (i < l) {
-            totalTokens += allocations[i].stakeAmount;
-            unchecked {
-                ++i;
-            }
+        for (uint256 i; i < uniqueAmounts.length; i++) {
+            require(
+                expectedUniqueAmounts[uniqueAmounts[i].amount] == 0,
+                "ManagerSetup: UNIQUE_AMOUNT_MISMATCH"
+            );
         }
 
     /**
