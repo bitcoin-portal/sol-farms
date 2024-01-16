@@ -796,16 +796,6 @@ contract TimeLockFarmV2Dual is TokenWrapper {
 
         if (block.timestamp < currentPeriodFinish) {
 
-            require(
-                _newRewardRateA >= rewardRateA,
-                "TimeLockFarmV2Dual: RATE_A_CANT_DECREASE"
-            );
-
-            require(
-                _newRewardRateB >= rewardRateB,
-                "TimeLockFarmV2Dual: RATE_B_CANT_DECREASE"
-            );
-
             uint256 remainingTime = currentPeriodFinish
                 - block.timestamp;
 
