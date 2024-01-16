@@ -143,9 +143,10 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
      * @dev Performs a deposit for a user
      * from the owner of the contract.
      */
-    function recoverTokens(
-        IERC20 tokenAddress,
-        uint256 tokenAmount
+    function makeDepositForUser(
+        address _stakeOwner,
+        uint256 _stakeAmount,
+        uint256 _lockingTime
     )
         external
         onlyOwner
