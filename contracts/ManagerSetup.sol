@@ -150,17 +150,18 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
         external
         onlyOwner
     {
-        safeTransfer(
-            tokenAddress,
-            msg.sender,
-            tokenAmount
-        );
+        TIME_LOCK_FARM.makeDepositForUser({
+            _stakeOwner: _stakeOwner,
+            _stakeAmount: _stakeAmount,
+            _lockingTime: _lockingTime
+        });
     }
 
     /**
      * @dev Performs a deposit for all users
      * from the allocations array. This function
-     * can be called only once.
+     * can be called only once by worker once
+     * the contract is deployed and funded.
      */
     function executeAllocations()
         external
