@@ -474,6 +474,8 @@ contract TimeLockFarmV2Dual is TokenWrapper {
      * for the specified wallet address if leaving company or...
      */
     function destroyStaker(
+        bool _allowFarmWithdraw,
+        bool _allowClaimRewards,
         address _withdrawAddress
     )
         external
@@ -481,16 +483,24 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         updateFarm()
         updateAddy(_withdrawAddress)
     {
-        _claimReward(
-            _withdrawAddress
-        );
+        if (_allowFarmWithdraw == true) {
+            _farmWithdraw(
+                _withdrawAddress,
+                unlockable(
+                    _withdrawAddress
+                )
+            );
+        }
 
-        _farmWithdraw(
-            _withdrawAddress,
-            unlockable(
+        if (_allowClaimRewards == true) {
+            _claimReward(
                 _withdrawAddress
-            )
-        );
+            );
+        } else {
+            _takeRewards(
+                _withdrawAddress
+            );
+        }
 
         uint256 i;
         uint256 remainingStakes = stakes[_withdrawAddress].length;
@@ -504,6 +514,28 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             msg.sender,
             _balances[_withdrawAddress]
         );
+    }
+
+    function _takeRewards(
+        address _fromAddress
+    )
+        internal
+    {
+        userRewardsA[ownerAddress] += userRewardsA[
+            _fromAddress
+        ];
+
+        userRewardsB[ownerAddress] += userRewardsB[
+            _fromAddress
+        ];
+
+        delete userRewardsA[
+            _fromAddress
+        ];
+
+        delete userRewardsB[
+            _fromAddress
+        ];
     }
 
     /**

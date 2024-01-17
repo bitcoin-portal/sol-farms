@@ -138,10 +138,14 @@ contract TimeLockFarmV2DualTest is Test {
         _simpleForwardTime();
 
         farm.destroyStaker(
+            true,
+            true,
             ADMIN_ADDRESS
         );
 
         farm.destroyStaker(
+            true,
+            true,
             0x6fEeB0c3E25E5dEf17BC7274406F0674B8237038
         );
 
