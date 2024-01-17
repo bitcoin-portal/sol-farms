@@ -22,11 +22,18 @@ contract TimeLockFarmV2DualTest is Test {
         0x641AD78BAca220C5BD28b51Ce8e0F495e85Fe689
     );
 
+    address constant USER_ADDRESS = address(
+        0x127564F78d371ECcE6Ab86A179Be4e4378B6ea3D
+    );
+
+    address constant ZERO_ADDRESS = address(0x0);
     uint256 public constant DEFAULT_DURATION = 30 days;
 
-    function tokens(uint256 _amount)
+    function tokens(
+        uint256 _amount
+    )
         internal
-        view
+        pure
         returns (uint256)
     {
         return _amount * 10 ** 18;
@@ -193,6 +200,65 @@ contract TimeLockFarmV2DualTest is Test {
         );
     }
 
+    function testMakeDepositForUserWithZero()
+        public
+    {
+        uint256 depositAmount = tokens(0);
+
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        verseToken.approve(
+            address(farm),
+            depositAmount
+        );
+
+        uint256 balanceBefore = verseToken.balanceOf(
+            address(farm)
+        );
+
+        farm.changeManager(
+            address(ADMIN_ADDRESS)
+        );
+
+        uint256 userStake = farm.stakeCount(
+            ADMIN_ADDRESS
+        );
+
+        uint256 expectedCountBefore = 2;
+
+        assertEq(
+            userStake,
+            expectedCountBefore
+        );
+
+        farm.makeDepositForUser(
+            ADMIN_ADDRESS,
+            depositAmount,
+            DEFAULT_DURATION,
+            0
+        );
+
+        userStake = farm.stakeCount(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            userStake,
+            expectedCountBefore + 1
+        );
+
+        uint256 balanceAfter = verseToken.balanceOf(
+            address(farm)
+        );
+
+        assertEq(
+            balanceAfter - balanceBefore,
+            depositAmount
+        );
+    }
+
     function testMakeDepositForUserThroughManager()
         public
     {
@@ -228,7 +294,118 @@ contract TimeLockFarmV2DualTest is Test {
         );
     }
 
-    function testFarmWithdraw()
+    function testProposeNewOwner()
+        public
+    {
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: INVALID_OWNER"
+        );
+
+        farm.proposeNewOwner(
+            USER_ADDRESS
+        );
+
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: WRONG_ADDRESS"
+        );
+
+        farm.proposeNewOwner(
+            ZERO_ADDRESS
+        );
+
+        farm.proposeNewOwner(
+            USER_ADDRESS
+        );
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: INVALID_CANDIDATE"
+        );
+
+        farm.claimOwnership();
+
+        address proposed = farm.proposedOwner();
+
+        assertEq(
+            proposed,
+            USER_ADDRESS
+        );
+
+        vm.startPrank(
+            USER_ADDRESS
+        );
+
+        farm.claimOwnership();
+
+        address newOwner = farm.ownerAddress();
+
+        assertEq(
+            newOwner,
+            USER_ADDRESS
+        );
+    }
+
+    function testChangeManager()
+        public
+    {
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: INVALID_OWNER"
+        );
+
+        farm.changeManager(
+            USER_ADDRESS
+        );
+
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: WRONG_ADDRESS"
+        );
+
+        farm.changeManager(
+            ZERO_ADDRESS
+        );
+
+        farm.changeManager(
+            USER_ADDRESS
+        );
+
+        address newManager = farm.managerAddress();
+
+        assertEq(
+            newManager,
+            USER_ADDRESS
+        );
+    }
+
+    function testLastTimeRewardApplicable()
+        public
+    {
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            farm.lastTimeRewardApplicable(),
+            0,
+            "Last time reward applicable should be 0"
+        );
+
+        testFastForwardWithRewards();
+
+        assertGt(
+            farm.lastTimeRewardApplicable(),
+            0,
+            "Last time reward applicable should be above 0"
+        );
+    }
+
+    function testFarmExit()
         public
     {
         vm.startPrank(
@@ -347,7 +524,7 @@ contract TimeLockFarmV2DualTest is Test {
     function testFastForward()
         public
     {
-        uint256 expectedDuration = 365 days * 4;
+        uint256 expectedDuration = 365 days * 4 + 3 days;
 
         vm.warp(
             block.timestamp + expectedDuration
@@ -374,10 +551,22 @@ contract TimeLockFarmV2DualTest is Test {
         assertGt(
             availableToWithdrawBefore,
             0,
-            "User should have unlockable balance"
+            "User should have unlockable balance as 0"
         );
 
         uint256 userBalanceBefore = verseToken.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        uint256 userBalanceBeforeB = stableToken.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        uint256 rewardsExpectedA = farm.earnedA(
+            ADMIN_ADDRESS
+        );
+
+        uint256 rewardsExpectedB = farm.earnedB(
             ADMIN_ADDRESS
         );
 
@@ -387,10 +576,20 @@ contract TimeLockFarmV2DualTest is Test {
             ADMIN_ADDRESS
         );
 
+        uint256 userBalanceAfterB = stableToken.balanceOf(
+            ADMIN_ADDRESS
+        );
+
         assertEq(
             userBalanceAfter - userBalanceBefore,
-            availableToWithdrawBefore,
-            "User should have unlockable balance"
+            availableToWithdrawBefore + rewardsExpectedA,
+            "User should have unlockable balance + rewards token A"
+        );
+
+        assertEq(
+            userBalanceAfterB - userBalanceBeforeB,
+            rewardsExpectedB,
+            "User should have rewards for token B"
         );
 
         uint256 availableToWithdrawAfter = farm.unlockable(
@@ -427,6 +626,691 @@ contract TimeLockFarmV2DualTest is Test {
             userBalanceAgain,
             userBalanceCheck,
             "Users balance should not change"
+        );
+    }
+
+    function testFastForwardWithRewards()
+        public
+    {
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        verseToken.transfer(
+            address(manager),
+            tokens(100_000_000_000)
+        );
+
+        stableToken.transfer(
+            address(manager),
+            tokens(200_000_000_000)
+        );
+
+        manager.setWorker(
+            ADMIN_ADDRESS
+        );
+
+        manager.setRewardRates(
+            tokens(1),
+            tokens(1)
+        );
+
+        manager.setRewardRates(
+            tokens(2),
+            tokens(2)
+        );
+
+        uint256 globalsLocked = farm.globalLocked({
+            _squared: false
+        });
+
+        uint256 globalsLockedSQRT = farm.globalLocked({
+            _squared: true
+        });
+
+        assertGt(
+            globalsLocked,
+            0,
+            "Globals should be above 0"
+        );
+
+        assertGt(
+            globalsLockedSQRT,
+            0,
+            "Globals should be above 0"
+        );
+
+        testFastForward();
+
+        uint256 globalsLockedAfter = farm.globalLocked({
+            _squared: false
+        });
+
+        uint256 globalsLockedSQRTAfter = farm.globalLocked({
+            _squared: true
+        });
+
+        assertEq(
+            globalsLockedAfter,
+            0,
+            "Globals should be 0"
+        );
+
+        assertEq(
+            globalsLockedSQRTAfter,
+            0,
+            "Globals should be 0"
+        );
+    }
+
+    function testRewardPerToken()
+        public
+    {
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        uint256 rewardPerTokenA = farm.rewardPerTokenA();
+
+        assertEq(
+            rewardPerTokenA,
+            0,
+            "Reward per token should be 0"
+        );
+
+        uint256 rewardPerTokenB = farm.rewardPerTokenB();
+
+        assertEq(
+            rewardPerTokenB,
+            0,
+            "Reward per token should be 0"
+        );
+
+        testFastForwardWithRewards();
+
+        rewardPerTokenA = farm.rewardPerTokenA();
+
+        assertGt(
+            rewardPerTokenA,
+            0,
+            "Reward per token should be above 0"
+        );
+
+        rewardPerTokenB = farm.rewardPerTokenB();
+
+        assertGt(
+            rewardPerTokenB,
+            0,
+            "Reward per token should be above 0"
+        );
+    }
+
+    function testIsProtected()
+        public
+    {
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        bool isProtected = farm.isProtected(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            isProtected,
+            false,
+            "User should not be protected"
+        );
+
+        farm.protectStaker(
+            ADMIN_ADDRESS
+        );
+
+        isProtected = farm.isProtected(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            isProtected,
+            true,
+            "User should be protected"
+        );
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: PROTECTED"
+        );
+
+        farm.destroyStaker(
+            true,
+            true,
+            ADMIN_ADDRESS
+        );
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: PROTECTED"
+        );
+
+        farm.destroyStaker(
+            false,
+            true,
+            ADMIN_ADDRESS
+        );
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: PROTECTED"
+        );
+
+        farm.destroyStaker(
+            true,
+            false,
+            ADMIN_ADDRESS
+        );
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: PROTECTED"
+        );
+
+        farm.destroyStaker(
+            false,
+            false,
+            ADMIN_ADDRESS
+        );
+    }
+
+    function testDestroyStakerTakeRewards()
+        public
+    {
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        address destroyedStaker = USER_ADDRESS;
+
+        uint256 farmTokensByAdminBefore = farm.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        assertGt(
+            farmTokensByAdminBefore,
+            0,
+            "User should have some farm tokens"
+        );
+
+        uint256 farmTokensByStakerBefore = farm.balanceOf(
+            destroyedStaker
+        );
+
+        assertGt(
+            farmTokensByStakerBefore,
+            0,
+            "User should have some farm tokens"
+        );
+
+        uint256 rewardTokenBefore = verseToken.balanceOf(
+            destroyedStaker
+        );
+
+        uint256 userBalanceBeforeStable = stableToken.balanceOf(
+            destroyedStaker
+        );
+
+        uint256 stakesOfUser = farm.stakeCount(
+            destroyedStaker
+        );
+
+        assertEq(
+            stakesOfUser,
+            2,
+            "User should have 2 stakes initially"
+        );
+
+        uint256 stakesOfAdminBefore = farm.stakeCount(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            stakesOfAdminBefore,
+            2,
+            "Admin should have 2 stakes initially"
+        );
+
+        farm.destroyStaker({
+            _allowFarmWithdraw: false,
+            _allowClaimRewards: false,
+            _withdrawAddress: destroyedStaker
+        });
+
+        uint256 farmTokensByAdminAfter = farm.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            farmTokensByAdminAfter,
+            farmTokensByAdminBefore + farmTokensByStakerBefore,
+            "Admin should get all users tokens"
+        );
+
+        uint256 farmTokensByStakerAfter = farm.balanceOf(
+            destroyedStaker
+        );
+
+        assertEq(
+            farmTokensByStakerAfter,
+            0,
+            "User should have 0 farm tokens after user destroyed"
+        );
+
+        uint256 stakesOfUserAfter = farm.stakeCount(
+            destroyedStaker
+        );
+
+        assertEq(
+            stakesOfUserAfter,
+            0,
+            "User should have 0 stakes after user destroyed"
+        );
+
+        uint256 stakesOfAdmin = farm.stakeCount(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            stakesOfAdmin,
+            stakesOfAdminBefore + 1,
+            "Admin stakes should increase by 1"
+        );
+
+        uint256 rewardTokenAfter = verseToken.balanceOf(
+            destroyedStaker
+        );
+
+        uint256 userBalanceAfterStable = stableToken.balanceOf(
+            destroyedStaker
+        );
+
+        assertEq(
+            rewardTokenAfter,
+            rewardTokenBefore,
+            "User should not get any tokens"
+        );
+
+        assertEq(
+            userBalanceAfterStable,
+            userBalanceBeforeStable,
+            "User should not get any stable rewards"
+        );
+    }
+
+    function testRenounceOwnership()
+        public
+    {
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: INVALID_OWNER"
+        );
+
+        farm.renounceOwnership();
+
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        farm.renounceOwnership();
+
+        address newOwner = farm.ownerAddress();
+
+        assertEq(
+            newOwner,
+            ZERO_ADDRESS
+        );
+    }
+
+    function testRecoverTokens()
+        public
+    {
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        uint256 balanceBefore = verseToken.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        farm.recoverTokens(
+            IERC20(address(verseToken)),
+            tokens(1)
+        );
+
+        uint256 balanceAfter = verseToken.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            balanceAfter - balanceBefore,
+            tokens(1)
+        );
+
+        stableToken.transfer(
+            address(farm),
+            tokens(2)
+        );
+
+        farm.recoverTokens(
+            IERC20(address(stableToken)),
+            tokens(1)
+        );
+
+        farm.renounceRewardTokenRecovery();
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: INVALID_RECOVERY"
+        );
+
+        farm.recoverTokens(
+            IERC20(address(verseToken)),
+            tokens(1)
+        );
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: INVALID_RECOVERY"
+        );
+
+        farm.recoverTokens(
+            IERC20(address(stableToken)),
+            tokens(1)
+        );
+
+        vm.stopPrank();
+
+        vm.startPrank(
+            farm.managerAddress()
+        );
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: INVALID_OWNER"
+        );
+
+        farm.recoverTokens(
+            IERC20(address(verseToken)),
+            tokens(1)
+        );
+    }
+
+    function testClaimRewards()
+        public
+    {
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        stableToken.transfer(
+            address(manager),
+            tokens(100_000_000_000)
+        );
+
+        manager.setRewardRates(
+            tokens(1),
+            tokens(1)
+        );
+
+        _simpleForwardTime();
+
+        uint256 rewardTokenBefore = verseToken.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        uint256 userBalanceBeforeStable = stableToken.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        farm.claimReward();
+
+        uint256 rewardTokenAfter = verseToken.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        uint256 userBalanceAfterStable = stableToken.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        assertGt(
+            rewardTokenAfter,
+            rewardTokenBefore,
+            "User should get some tokens"
+        );
+
+        assertGt(
+            userBalanceAfterStable,
+            userBalanceBeforeStable,
+            "User should get some stable rewards"
+        );
+    }
+
+    function testTransfer()
+        public
+    {
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        uint256 balanceBefore = farm.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        farm.transfer(
+            USER_ADDRESS,
+            tokens(1)
+        );
+
+        uint256 balanceAfter = farm.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            balanceBefore - balanceAfter,
+            tokens(1)
+        );
+    }
+
+    function testSetAllowTransfer()
+        public
+    {
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        farm.setAllowTransfer(
+            false
+        );
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: TRANSFER_LOCKED"
+        );
+
+        farm.transfer(
+            USER_ADDRESS,
+            tokens(1)
+        );
+
+        farm.setAllowTransfer(
+            true
+        );
+
+        farm.transfer(
+            USER_ADDRESS,
+            tokens(1)
+        );
+    }
+
+    function testTransferFrom()
+        public
+    {
+        vm.startPrank(
+            USER_ADDRESS
+        );
+
+        farm.approve(
+            ADMIN_ADDRESS,
+            tokens(1)
+        );
+
+        uint256 balanceBefore = farm.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        vm.stopPrank();
+
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        farm.transferFrom(
+            USER_ADDRESS,
+            ADMIN_ADDRESS,
+            tokens(1)
+        );
+
+        uint256 balanceAfter = farm.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            balanceAfter - balanceBefore,
+            tokens(1)
+        );
+    }
+
+    function testFarmWithdraw()
+        public
+    {
+        address withdrawAddress = USER_ADDRESS;
+
+        vm.startPrank(
+            withdrawAddress
+        );
+
+        uint256 farmBalanceForUserBefore = farm.balanceOf(
+            withdrawAddress
+        );
+
+        uint256 withdrawAmount = farmBalanceForUserBefore / 10;
+
+        farm.farmWithdraw(
+            withdrawAmount
+        );
+
+        uint256 farmBalanceForUserAfter = farm.balanceOf(
+            withdrawAddress
+        );
+
+        assertEq(
+            farmBalanceForUserBefore,
+            farmBalanceForUserAfter + withdrawAmount
+        );
+    }
+
+    function testClearPastStamps()
+        public
+    {
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        uint256 stampsBefore = farm.uniqueStamps(0);
+
+        assertGt(
+            stampsBefore,
+            0,
+            "Stamps should be above 0"
+        );
+
+        farm.clearPastStamps();
+
+        uint256 stampsAfter = farm.uniqueStamps(0);
+
+        assertGt(
+            stampsBefore,
+            0,
+            "Stamps should be above 0"
+        );
+
+        assertGt(
+            stampsAfter,
+            0,
+            "Stamps should be above 0"
+        );
+
+        testFastForward();
+
+        stampsBefore = farm.uniqueStamps(0);
+
+        uint256 rateBefore = farm.unlockRates(
+            stampsBefore
+        );
+
+        assertEq(
+            stampsBefore,
+            1830211200,
+            "Stamps should be 1830211200"
+        );
+
+        assertGt(
+            rateBefore,
+            0,
+            "Rate should be above 0"
+        );
+
+        farm.clearPastStamps();
+
+        uint256 rateAfter = farm.unlockRates(
+            stampsBefore
+        );
+
+        assertEq(
+            rateAfter,
+            0,
+            "Rate should be 0"
+        );
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        uint256 l = farm.getStampsLength();
+
+        assertEq(
+            l,
+            6,
+            "Stamps length should be 6"
+        );
+
+        farm.clearPastStamps();
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        farm.clearPastStamps();
+
+        l = farm.getStampsLength();
+
+        assertEq(
+            l,
+            1,
+            "Stamps length should be 1"
+        );
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        farm.clearPastStamps();
+
+        l = farm.getStampsLength();
+
+        assertEq(
+            l,
+            0,
+            "Stamps length should be 0"
         );
     }
 }
