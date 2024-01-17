@@ -441,34 +441,45 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         }
     }
 
+    /**
+     * @dev Performs some memory cleaning
+     * to reduce gas consumption for all users
+     * in the farm by removing past timestamps
+     * from the farm (no stakes with such timestamp)
+     */
     function clearPastStamps()
         external
         onlyOwner
     {
         uint256 i;
-        uint256 stamps = uniqueStamps.length;
         uint256 uniqueStamp;
 
-        for (i; i < stamps; ++i) {
+        while (i < uniqueStamps.length) {
 
             // store reference to unique timestamp
             uniqueStamp = uniqueStamps[i];
 
             // compare reference to current block timestamp
-            if (uniqueStamp < block.timestamp) {
+            if (block.timestamp > uniqueStamp) {
 
                 // delete unlock rate for timestamp
                 delete unlockRates[
                     uniqueStamp
                 ];
 
-                // overwrite old stamp with last item
-                uniqueStamps[i] = uniqueStamps[
-                    stamps - 1
-                ];
+                // overwrite timestamp with last one
+                if (uniqueStamps.length > 1) {
+                    uniqueStamps[i] = uniqueStamps[
+                        uniqueStamps.length - 1
+                    ];
+                }
 
-                // remove last item from array
+                // remove last timestamp from array
                 uniqueStamps.pop();
+            }
+
+            unchecked {
+                ++i;
             }
         }
     }
