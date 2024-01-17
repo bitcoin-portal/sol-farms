@@ -472,6 +472,15 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             }
         }
     }
+
+    function getStampsLength()
+        external
+        view
+        returns (uint256)
+    {
+        return uniqueStamps.length;
+    }
+
     /**
      * @dev Forced withdrawal of staked tokens and claim rewards
      * for the specified wallet address if leaving company or...
