@@ -42,6 +42,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
 
     bool public allowRecoverRewardTokens;
     bool public allowReceiptTokenTransfer;
+
     struct Stake {
         uint256 amount;
         uint256 createTime;
@@ -410,6 +411,11 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             / _lockingTime;
     }
 
+    /**
+     * @dev Calculates total amount of locked tokens
+     * for all users in the farm at the moment
+     * @param _squared - if true, calculates quadratic amount
+     */
     function globalLocked(
         bool _squared
     )
@@ -984,7 +990,6 @@ contract TimeLockFarmV2Dual is TokenWrapper {
                     userStake.createTime = block.timestamp;
                     i++;
                 }
-
                 if (unlockedAmount == _withdrawAmount) {
                     return;
                 }
