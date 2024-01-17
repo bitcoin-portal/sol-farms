@@ -76,6 +76,15 @@ contract TimeLockFarmV2DualTest is Test {
             _defaultDuration: DEFAULT_DURATION
         });
 
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: NO_STAKERS"
+        );
+
+        farm.setRewardRates(
+            tokens(1),
+            tokens(1)
+        );
+
         manager = new ManagerSetup({
             _owner: ADMIN_ADDRESS,
             _worker: ADMIN_ADDRESS,
@@ -123,6 +132,14 @@ contract TimeLockFarmV2DualTest is Test {
             expectedDuration
         );
 
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: INVALID_DURATION"
+        );
+
+        farm.setRewardDuration(
+            0
+        );
+
         farm.setRewardDuration(
             updatedDuration
         );
@@ -142,6 +159,8 @@ contract TimeLockFarmV2DualTest is Test {
             ADMIN_ADDRESS
         );
 
+        address staker = 0x6fEeB0c3E25E5dEf17BC7274406F0674B8237038;
+
         _simpleForwardTime();
 
         farm.destroyStaker(
@@ -150,14 +169,50 @@ contract TimeLockFarmV2DualTest is Test {
             ADMIN_ADDRESS
         );
 
+        uint256 balanceBefore = verseToken.balanceOf(
+            staker
+        );
+
+        uint256 unlockableAmount = farm.unlockable(
+            staker
+        );
+
+        assertGt(
+            unlockableAmount,
+            0,
+            "Unlockable amount should be above 0"
+        );
+
+        assertEq(
+            balanceBefore,
+            0,
+            "Farm balance should be 0"
+        );
+
         farm.destroyStaker(
             true,
             true,
-            0x6fEeB0c3E25E5dEf17BC7274406F0674B8237038
+            staker
         );
 
-        uint256 balance = verseToken.balanceOf(
-            address(farm)
+        uint256 balanceAfter = verseToken.balanceOf(
+            staker
+        );
+
+        assertEq(
+            balanceAfter,
+            unlockableAmount,
+            "Farm balance should be above 0"
+        );
+
+        uint256 stakeCount = farm.stakeCount(
+            staker
+        );
+
+        assertEq(
+            stakeCount,
+            0,
+            "Stake count should be 0"
         );
     }
 
@@ -648,6 +703,24 @@ contract TimeLockFarmV2DualTest is Test {
 
         manager.setWorker(
             ADMIN_ADDRESS
+        );
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: INVALID_RATE_A"
+        );
+
+        manager.setRewardRates(
+            tokens(0),
+            tokens(1)
+        );
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: INVALID_RATE_B"
+        );
+
+        manager.setRewardRates(
+            tokens(1),
+            tokens(0)
         );
 
         manager.setRewardRates(
@@ -1161,6 +1234,24 @@ contract TimeLockFarmV2DualTest is Test {
 
         vm.startPrank(
             ADMIN_ADDRESS
+        );
+
+        farm.setAllowTransfer(
+            false
+        );
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: TRANSFER_LOCKED"
+        );
+
+        farm.transferFrom(
+            USER_ADDRESS,
+            ADMIN_ADDRESS,
+            tokens(1)
+        );
+
+        farm.setAllowTransfer(
+            true
         );
 
         farm.transferFrom(
