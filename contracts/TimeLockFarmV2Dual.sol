@@ -39,6 +39,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
     address public proposedOwner;
     address public managerAddress;
 
+    bool public allowReceiptTokenTransfer;
     struct Stake {
         uint256 amount;
         uint256 createTime;
@@ -966,6 +967,11 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         updateAddy(_recipient)
         returns (bool)
     {
+        require(
+            allowReceiptTokenTransfer == true,
+            "TimeLockFarmV2Dual: TRANSFER_LOCKED"
+        );
+
         _unlockAndTransfer(
             msg.sender,
             _recipient,
@@ -989,6 +995,11 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         updateAddy(_recipient)
         returns (bool)
     {
+        require(
+            allowReceiptTokenTransfer == true,
+            "TimeLockFarmV2Dual: TRANSFER_LOCKED"
+        );
+
         if (_allowances[_sender][msg.sender] != type(uint256).max) {
             _allowances[_sender][msg.sender] -= _amount;
         }
@@ -1000,6 +1011,15 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         );
 
         return true;
+    }
+
+    function setAllowTransfer(
+        bool _allowTransfer
+    )
+        external
+        onlyOwner
+    {
+        allowReceiptTokenTransfer = _allowTransfer;
     }
 
     function _unlockAndTransfer(
