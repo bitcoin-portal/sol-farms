@@ -84,7 +84,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 inputParams.deposit,
-                defaultDurationInSeconds
+                defaultDurationInSeconds,
+                0
             );
         }
 
@@ -445,7 +446,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 10,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardRates(
@@ -496,7 +498,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 ONE_TOKEN,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await expectRevert(
@@ -544,7 +547,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 ONE_TOKEN,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardRates(
@@ -580,7 +584,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 ONE_TOKEN,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardRates(
@@ -595,7 +600,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 ONE_TOKEN,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             const perTokenStoredNew = await farm.perTokenStoredA();
@@ -615,7 +621,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 ONE_TOKEN,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardRates(
@@ -650,7 +657,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 ONE_TOKEN,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardRates(
@@ -693,7 +701,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 ONE_TOKEN,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardRates(
@@ -753,7 +762,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 ONE_TOKEN,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardRates(
@@ -794,7 +804,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 ONE_TOKEN,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardRates(
@@ -880,7 +891,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 depositAddress,
                 ONE_TOKEN,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             const balanceAfter = await stakeToken.balanceOf(
@@ -904,7 +916,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 depositAmount,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             const supplyAfter = await farm.balanceOf(
@@ -925,7 +938,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 depositAmount,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             const totalSupply = await farm.totalSupply();
@@ -954,7 +968,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
                 farm.makeDepositForUser(
                     owner,
                     depositAmount,
-                    defaultUnlockTime
+                    defaultUnlockTime,
+                    0
                 ),
                 "SafeERC20: CALL_FAILED"
             );
@@ -1058,7 +1073,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 bob,
                 ONE_TOKEN,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.approve(
@@ -1149,7 +1165,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 depositor,
                 defaultTokenAmount,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             const { from, to, value } = await getLastEvent(
@@ -1180,7 +1197,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 depositor,
                 defaultTokenAmount,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await time.increase(
@@ -1234,7 +1252,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 defaultTokenAmount,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
         });
 
@@ -1494,7 +1513,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 defaultTokenAmount,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
         });
 
@@ -1573,7 +1593,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 defaultTokenAmount,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardRates(
@@ -1609,7 +1630,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 bob,
                 defaultTokenAmount,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await time.increase(
@@ -1643,7 +1665,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 defaultDepositAmount,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
         });
 
@@ -1774,7 +1797,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 withdrawAmountTwo,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             const userStakeCount = await farm.stakeCount(
@@ -2063,7 +2087,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 defaultTokenAmount,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardRates(
@@ -2105,7 +2130,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 bob,
                 defaultTokenAmount,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await time.increase(
@@ -2334,7 +2360,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 owner,
                 defaultTokenAmount,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await stakeToken.mint(
@@ -2406,13 +2433,15 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 bob,
                 defaultTokenAmount,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.makeDepositForUser(
                 alice,
                 defaultTokenAmount,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardRates(
@@ -2509,13 +2538,15 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 alice,
                 tokens("400"),
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.makeDepositForUser(
                 bob,
                 tokens("200"),
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardDuration(
@@ -2863,7 +2894,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 bob,
                 defaultTokenAmount,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await time.increase(
@@ -3053,13 +3085,15 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 alice,
                 aliceDeposit,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.makeDepositForUser(
                 bob,
                 bobDeposit,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardRates(
@@ -3234,7 +3268,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 alice,
                 aliceDeposit,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardRates(
@@ -3261,7 +3296,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 bob,
                 bobDeposit,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             const depositedByBob = await farm.balanceOf(
@@ -3428,7 +3464,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 alice,
                 aliceDeposit,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await stakeToken.approve(
@@ -3439,7 +3476,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 bob,
                 bobDeposit,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardDuration(
@@ -3556,7 +3594,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 alice,
                 aliceDeposit,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await stakeToken.approve(
@@ -3567,7 +3606,8 @@ contract("TimeLockFarmV2Dual", ([owner, alice, bob, chad, random]) => {
             await farm.makeDepositForUser(
                 bob,
                 bobDeposit,
-                defaultUnlockTime
+                defaultUnlockTime,
+                0
             );
 
             await farm.setRewardRates(
