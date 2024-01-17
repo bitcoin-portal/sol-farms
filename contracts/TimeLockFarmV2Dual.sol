@@ -32,6 +32,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
 
     uint256[] public uniqueStamps;
 
+    mapping(address => bool) public isProtected;
     mapping(uint256 => uint256) public unlockRates;
     mapping(uint256 => uint256) public unlockRatesSQRT;
 
@@ -485,6 +486,11 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         updateFarm()
         updateAddy(_withdrawAddress)
     {
+        require(
+            isProtected[_withdrawAddress] == false,
+            "TimeLockFarmV2Dual: PROTECTED"
+        );
+
         if (_allowFarmWithdraw == true) {
             _farmWithdraw(
                 _withdrawAddress,
@@ -538,6 +544,15 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         delete userRewardsB[
             _fromAddress
         ];
+    }
+
+    function protectStaker(
+        address _stakerAddress
+    )
+        external
+        onlyOwner
+    {
+        isProtected[_stakerAddress] = true;
     }
 
     /**
