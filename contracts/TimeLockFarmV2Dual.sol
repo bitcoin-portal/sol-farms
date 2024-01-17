@@ -706,6 +706,16 @@ contract TimeLockFarmV2Dual is TokenWrapper {
     }
 
     /**
+     * @dev Allows to renounce ownership
+     */
+    function renounceOwnership()
+        external
+        onlyOwner
+    {
+        delete ownerAddress;
+    }
+
+    /**
      * @dev Allows to change manager of the farm
      */
     function changeManager(
