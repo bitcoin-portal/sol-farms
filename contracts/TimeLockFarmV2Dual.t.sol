@@ -246,4 +246,86 @@ contract TimeLockFarmV2DualTest is Test {
             "Farm balance for user should be 20% less after exit"
         );
     }
+
+    function testScraping()
+        public
+    {
+        address withdrawAddress = ADMIN_ADDRESS;
+
+        uint256 availableToWithdrawInitially = farm.unlockable(
+            withdrawAddress
+        );
+
+        _simpleForwardTime();
+
+        uint256 availableToWithdrawNow = farm.unlockable(
+            withdrawAddress
+        );
+
+        console.log(availableToWithdrawNow, 'availableToWithdrawNow');
+
+        vm.startPrank(
+            withdrawAddress
+        );
+
+        uint256 tokensInWalletBeforeExit = farm.balanceOf(
+            withdrawAddress
+        );
+
+        farm.exitFarm();
+
+        uint256 tokensInWalletAfterExit = farm.balanceOf(
+            withdrawAddress
+        );
+
+        assertEq(
+            tokensInWalletBeforeExit,
+            tokensInWalletAfterExit + availableToWithdrawNow,
+            "Expected amount to withdraw must end up in user wallet"
+        );
+
+        uint256 availableToWithdrawAfterExit = farm.unlockable(
+            withdrawAddress
+        );
+
+        assertEq(
+            availableToWithdrawAfterExit,
+            0,
+            "After user exited counter of unlockable must be 0"
+        );
+
+        _simpleForwardTime();
+
+        availableToWithdrawAfterExit = farm.unlockable(
+            withdrawAddress
+        );
+
+        console.log(
+            availableToWithdrawAfterExit,
+            'availableToWithdrawAfterExit'
+        );
+
+        console.log(
+            availableToWithdrawNow - availableToWithdrawAfterExit,
+            'availableToWithdrawAfterExit'
+        );
+
+        assertGt(
+            availableToWithdrawAfterExit,
+            0,
+            "Once time passed amount should increase"
+        );
+
+        assertEq(
+            availableToWithdrawNow - availableToWithdrawAfterExit,
+            tokens(37500000),
+            "Compare with initial amount hardcoded"
+        );
+
+        assertEq(
+            availableToWithdrawNow - availableToWithdrawAfterExit,
+            availableToWithdrawInitially,
+            "Compare with initial amount"
+        );
+    }
 }
