@@ -39,6 +39,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
     address public proposedOwner;
     address public managerAddress;
 
+    bool public allowRecoverRewardTokens;
     bool public allowReceiptTokenTransfer;
     struct Stake {
         uint256 amount;
@@ -746,6 +747,30 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             tokenAddress,
             tokenAmount
         );
+
+        if (allowRecoverRewardTokens == true) {
+            return;
+        }
+
+        if (tokenAddress == rewardTokenA) {
+            revert("TimeLockFarmV2Dual: INVALID_RECOVERY");
+        }
+
+        if (tokenAddress == rewardTokenB) {
+            revert("TimeLockFarmV2Dual: INVALID_RECOVERY");
+        }
+    }
+
+    /**
+     * @dev Enters mode in which reward tokens
+     * can't be recovered by the owner
+     * to protect users from admin failure
+     */
+    function renounceRewardTokenRecovery()
+        external
+        onlyOwner
+    {
+        allowRecoverRewardTokens = false;
     }
 
     /**
