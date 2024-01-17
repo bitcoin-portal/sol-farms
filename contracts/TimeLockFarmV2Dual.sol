@@ -322,10 +322,10 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 length = walletStakes.length;
 
         while (i < length) {
+            totalAmount += _calculateUnlockableAmount(
+                walletStakes[i]
+            );
             unchecked {
-                totalAmount += _calculateUnlockableAmount(
-                    walletStakes[i]
-                );
                 ++i;
             }
         }
