@@ -7,7 +7,8 @@ interface ITimeLockFarmV2Dual {
     function makeDepositForUser(
         address _stakeOwner,
         uint256 _stakeAmount,
-        uint256 _lockingTime
+        uint256 _lockingTime,
+        uint256 _initialTime
     )
         external;
 

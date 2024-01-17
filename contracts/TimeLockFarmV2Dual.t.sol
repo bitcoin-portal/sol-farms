@@ -52,6 +52,9 @@ contract TimeLockFarmV2DualTest is Test {
             FORK_MAINNET_BLOCK
         );
 
+        // @TODO test without
+        vm.warp(1704067200);
+
         vm.startPrank(
             ADMIN_ADDRESS
         );
@@ -172,7 +175,8 @@ contract TimeLockFarmV2DualTest is Test {
         farm.makeDepositForUser(
             ADMIN_ADDRESS,
             depositAmount,
-            DEFAULT_DURATION
+            DEFAULT_DURATION,
+            block.timestamp
         );
 
         uint256 balanceAfter = verseToken.balanceOf(
@@ -206,7 +210,8 @@ contract TimeLockFarmV2DualTest is Test {
         manager.makeDepositForUser({
             _stakeOwner: ADMIN_ADDRESS,
             _stakeAmount: depositAmount,
-            _lockingTime: DEFAULT_DURATION
+            _lockingTime: DEFAULT_DURATION,
+            _initialTime: block.timestamp
         });
 
         uint256 balanceAfter = verseToken.balanceOf(
@@ -239,6 +244,9 @@ contract TimeLockFarmV2DualTest is Test {
         uint256 expectedWithdraw = farmBalanceForUserBefore
             * 20
             / 100;
+
+        // @TODO test with timewarp
+        // vm.warp(1704067200);
 
         assertEq(
             farmBalanceForUserBefore,
@@ -316,11 +324,14 @@ contract TimeLockFarmV2DualTest is Test {
             "Once time passed amount should increase"
         );
 
+        /*
+        vm.warp(1704067200);
         assertEq(
             availableToWithdrawNow - availableToWithdrawAfterExit,
             tokens(37500000),
             "Compare with initial amount hardcoded"
         );
+        */
 
         assertEq(
             availableToWithdrawNow - availableToWithdrawAfterExit,

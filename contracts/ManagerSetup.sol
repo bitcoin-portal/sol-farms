@@ -153,16 +153,18 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
     function makeDepositForUser(
         address _stakeOwner,
         uint256 _stakeAmount,
-        uint256 _lockingTime
+        uint256 _lockingTime,
+        uint256 _initialTime
     )
         external
         onlyOwner
     {
-        TIME_LOCK_FARM.makeDepositForUser({
-            _stakeOwner: _stakeOwner,
-            _stakeAmount: _stakeAmount,
-            _lockingTime: _lockingTime
-        });
+        TIME_LOCK_FARM.makeDepositForUser(
+            _stakeOwner,
+            _stakeAmount,
+            _lockingTime,
+            _initialTime
+        );
     }
 
     /**
@@ -217,13 +219,15 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
             TIME_LOCK_FARM.makeDepositForUser({
                 _stakeOwner: allocation.stakeOwner,
                 _stakeAmount: get20Percent(allocation.stakeAmount),
-                _lockingTime: 0
+                _lockingTime: 0,
+                _initialTime: block.timestamp
             });
 
             TIME_LOCK_FARM.makeDepositForUser({
                 _stakeOwner: allocation.stakeOwner,
                 _stakeAmount: get80Percent(allocation.stakeAmount),
-                _lockingTime: allocation.vestingTime
+                _lockingTime: allocation.lockingTime,
+                _initialTime: allocation.initialTime
             });
 
             return true;
@@ -232,7 +236,8 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
         TIME_LOCK_FARM.makeDepositForUser({
             _stakeOwner: allocation.stakeOwner,
             _stakeAmount: allocation.stakeAmount,
-            _lockingTime: allocation.vestingTime
+            _lockingTime: allocation.lockingTime,
+            _initialTime: allocation.initialTime
         });
 
         return false;

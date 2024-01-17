@@ -333,7 +333,8 @@ contract TimeLockFarmV2Dual is TokenWrapper {
     function makeDepositForUser(
         address _stakeOwner,
         uint256 _stakeAmount,
-        uint256 _stakeDuration
+        uint256 _lockingTime,
+        uint256 _initialTime
     )
         external
         onlyManager
@@ -345,9 +346,13 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             _stakeOwner
         );
 
-        uint256 createTime = block.timestamp;
+        if (_initialTime == 0) {
+            _initialTime = block.timestamp;
+        }
+
+        uint256 createTime = _initialTime;
         uint256 unlockTime = createTime
-            + _stakeDuration;
+            + _lockingTime;
 
         stakes[_stakeOwner].push(
             Stake({
@@ -357,11 +362,11 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             })
         );
 
-        if (_stakeDuration > 0) {
+        if (_lockingTime > 0) {
             _storeUnlockRates(
                 unlockTime,
                 _stakeAmount,
-                _stakeDuration
+                _lockingTime
             );
         }
 
@@ -375,14 +380,14 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         emit Staked(
             _stakeOwner,
             _stakeAmount,
-            _stakeDuration
+            _lockingTime
         );
     }
 
     function _storeUnlockRates(
         uint256 _unlockTime,
         uint256 _stakeAmount,
-        uint256 _stakeDuration
+        uint256 _lockingTime
     )
         private
     {
@@ -393,10 +398,10 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         }
 
         unlockRates[_unlockTime] += _stakeAmount
-            / _stakeDuration;
+            / _lockingTime;
 
         unlockRatesSQRT[_unlockTime] += _stakeAmount.sqrt()
-            / _stakeDuration;
+            / _lockingTime;
     }
 
     function globalLocked(
