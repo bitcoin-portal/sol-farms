@@ -343,4 +343,90 @@ contract TimeLockFarmV2DualTest is Test {
             "Compare with initial amount"
         );
     }
+
+    function testFastForward()
+        public
+    {
+        uint256 expectedDuration = 365 days * 4;
+
+        vm.warp(
+            block.timestamp + expectedDuration
+        );
+
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        uint256 stakeCountBefore = farm.stakeCount(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            stakeCountBefore,
+            2,
+            "User should have 2 stakes initially"
+        );
+
+        uint256 availableToWithdrawBefore = farm.unlockable(
+            ADMIN_ADDRESS
+        );
+
+        assertGt(
+            availableToWithdrawBefore,
+            0,
+            "User should have unlockable balance"
+        );
+
+        uint256 userBalanceBefore = verseToken.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        farm.exitFarm();
+
+        uint256 userBalanceAfter = verseToken.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            userBalanceAfter - userBalanceBefore,
+            availableToWithdrawBefore,
+            "User should have unlockable balance"
+        );
+
+        uint256 availableToWithdrawAfter = farm.unlockable(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            availableToWithdrawAfter,
+            0,
+            "User should have 0 unlockable balance"
+        );
+
+        uint256 stakeCountAfter = farm.stakeCount(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            stakeCountAfter,
+            0,
+            "User should have 0 stakes remaining"
+        );
+
+        uint256 userBalanceAgain = verseToken.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        farm.exitFarm();
+
+        uint256 userBalanceCheck = verseToken.balanceOf(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            userBalanceAgain,
+            userBalanceCheck,
+            "Users balance should not change"
+        );
+    }
 }
