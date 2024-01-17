@@ -870,6 +870,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
                         break;
                     }
                 } else {
+                    userStake.createTime = block.timestamp;
                     i++;
                 }
 
