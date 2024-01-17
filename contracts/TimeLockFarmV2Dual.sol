@@ -170,6 +170,9 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         managerAddress = msg.sender;
 
         rewardDuration = _defaultDuration;
+
+        allowRecoverRewardTokens = true;
+        allowReceiptTokenTransfer = true;
     }
 
     /**
