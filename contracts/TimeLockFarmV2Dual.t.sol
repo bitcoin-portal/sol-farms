@@ -26,6 +26,10 @@ contract TimeLockFarmV2DualTest is Test {
         0x127564F78d371ECcE6Ab86A179Be4e4378B6ea3D
     );
 
+    address constant FUTURE_ADDRES = address(
+        0x216b6F99CA2bf53d801fE9Ba7d68fADC4949249B
+    );
+
     address constant ZERO_ADDRESS = address(0x0);
     uint256 public constant DEFAULT_DURATION = 30 days;
 
@@ -1370,8 +1374,8 @@ contract TimeLockFarmV2DualTest is Test {
 
         assertEq(
             l,
-            6,
-            "Stamps length should be 6"
+            7,
+            "Stamps length should be 7"
         );
 
         farm.clearPastStamps();
@@ -1402,6 +1406,139 @@ contract TimeLockFarmV2DualTest is Test {
             l,
             0,
             "Stamps length should be 0"
+        );
+    }
+
+    function testFutureTimestamps()
+        public
+    {
+        // if allocator has stake with future timestamp it should be ignored
+        // and not earn any rewards, also cannot scrape any tokens from it since
+        // unlock has not even started (for accounts with future timestamps)
+
+        uint256 balanceBefore = farm.balanceOf(
+            FUTURE_ADDRES
+        );
+
+        assertGt(
+            balanceBefore,
+            0,
+            "User should have some shares"
+        );
+
+        uint256 stakeCountBefore = farm.stakeCount(
+            FUTURE_ADDRES
+        );
+
+        assertEq(
+            stakeCountBefore,
+            1,
+            "User should have 1 stakes initially"
+        );
+
+        uint256 availableToWithdrawBefore = farm.unlockable(
+            FUTURE_ADDRES
+        );
+
+        assertEq(
+            availableToWithdrawBefore,
+            0,
+            "User should have unlockable balance as 0"
+        );
+
+        vm.warp(
+            block.timestamp + 40 days
+        );
+
+        uint256 availableToWithdrawNow = farm.unlockable(
+            FUTURE_ADDRES
+        );
+
+        uint256 rewardsNow = farm.earnedA(
+            FUTURE_ADDRES
+        );
+
+        assertEq(
+            rewardsNow,
+            0,
+            "User should have 0 rewards"
+        );
+
+        assertEq(
+            availableToWithdrawNow,
+            0,
+            "User should have unlockable balance as 0"
+        );
+
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        verseToken.transfer(
+            address(manager),
+            tokens(100_000_000_000)
+        );
+
+        stableToken.transfer(
+            address(manager),
+            tokens(200_000_000_000)
+        );
+
+        manager.setRewardDuration(
+            100 days
+        );
+
+        manager.setRewardRates(
+            tokens(1),
+            tokens(1)
+        );
+
+        vm.warp(
+            block.timestamp + 40 days
+        );
+
+        rewardsNow = farm.earnedA(
+            FUTURE_ADDRES
+        );
+
+        assertEq(
+            rewardsNow,
+            0,
+            "User should have 0 rewards"
+        );
+
+        availableToWithdrawNow = farm.unlockable(
+            FUTURE_ADDRES
+        );
+
+        assertEq(
+            availableToWithdrawNow,
+            0,
+            "User should have unlockable balance as 0"
+        );
+
+        vm.warp(
+            block.timestamp + 40 days
+        );
+
+        rewardsNow = farm.earnedA(
+            FUTURE_ADDRES
+        );
+
+        assertGt(
+            rewardsNow,
+            0,
+            "User should have 0 rewards"
+        );
+
+        availableToWithdrawNow = farm.unlockable(
+            FUTURE_ADDRES
+        );
+
+        assertGt(
+            availableToWithdrawNow,
+            0,
+            "User should have unlockable balance"
         );
     }
 }
