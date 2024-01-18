@@ -353,6 +353,10 @@ contract TimeLockFarmV2Dual is TokenWrapper {
             _stakeOwner
         );
 
+        if (_initialTime > block.timestamp) {
+            revert("TimeLockFarmV2Dual: INVALID_TIME");
+        }
+
         if (_initialTime == 0) {
             _initialTime = block.timestamp;
         }
@@ -543,8 +547,7 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 remainingStakes = stakes[_withdrawAddress].length;
 
         for (i; i < remainingStakes; ++i) {
-            stakes[_withdrawAddress][i].createTime = block.timestamp;
-            stakes[_withdrawAddress][i].unlockTime = block.timestamp;
+            delete stakes[_withdrawAddress][i].unlockTime;
         }
 
         _unlockAndTransfer(
@@ -1016,10 +1019,6 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         view
         returns (uint256)
     {
-        if (block.timestamp < _stake.createTime) {
-            return 0;
-        }
-
         if (block.timestamp >= _stake.unlockTime) {
             return _stake.amount;
         }
