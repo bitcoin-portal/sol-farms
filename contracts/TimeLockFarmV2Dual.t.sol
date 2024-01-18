@@ -239,6 +239,17 @@ contract TimeLockFarmV2DualTest is Test {
             address(ADMIN_ADDRESS)
         );
 
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: INVALID_TIME"
+        );
+
+        farm.makeDepositForUser(
+            ADMIN_ADDRESS,
+            depositAmount,
+            DEFAULT_DURATION,
+            block.timestamp + 1
+        );
+
         farm.makeDepositForUser(
             ADMIN_ADDRESS,
             depositAmount,
@@ -254,6 +265,12 @@ contract TimeLockFarmV2DualTest is Test {
             balanceAfter - balanceBefore,
             depositAmount
         );
+
+        vm.warp(
+            block.timestamp + 365 days * 4
+        );
+
+        farm.clearPastStamps();
     }
 
     function testMakeDepositForUserWithZero()
@@ -296,6 +313,7 @@ contract TimeLockFarmV2DualTest is Test {
             0
         );
 
+
         userStake = farm.stakeCount(
             ADMIN_ADDRESS
         );
@@ -305,6 +323,13 @@ contract TimeLockFarmV2DualTest is Test {
             expectedCountBefore + 1
         );
 
+        farm.makeDepositForUser(
+            ADMIN_ADDRESS,
+            depositAmount,
+            DEFAULT_DURATION * 2,
+            0
+        );
+
         uint256 balanceAfter = verseToken.balanceOf(
             address(farm)
         );
@@ -312,6 +337,14 @@ contract TimeLockFarmV2DualTest is Test {
         assertEq(
             balanceAfter - balanceBefore,
             depositAmount
+        );
+
+        vm.warp(
+            block.timestamp + DEFAULT_DURATION
+        );
+
+        farm.farmWithdraw(
+            depositAmount / 2
         );
     }
 
@@ -700,8 +733,16 @@ contract TimeLockFarmV2DualTest is Test {
             tokens(200_000_000_000)
         );
 
+        manager.setOwner(
+            ADMIN_ADDRESS
+        );
+
         manager.setWorker(
             ADMIN_ADDRESS
+        );
+
+        manager.setRewardDuration(
+            DEFAULT_DURATION
         );
 
         vm.expectRevert(
@@ -1409,6 +1450,46 @@ contract TimeLockFarmV2DualTest is Test {
         );
     }
 
+
+    function testMakeDepositForUserWorks()
+        public
+    {
+        uint256 depositAmount = tokens(100_000);
+
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        verseToken.approve(
+            address(farm),
+            depositAmount
+        );
+
+        uint256 balanceBefore = verseToken.balanceOf(
+            address(farm)
+        );
+
+        farm.changeManager(
+            address(ADMIN_ADDRESS)
+        );
+
+        farm.makeDepositForUser(
+            ADMIN_ADDRESS,
+            depositAmount,
+            DEFAULT_DURATION,
+            block.timestamp
+        );
+
+        uint256 balanceAfter = verseToken.balanceOf(
+            address(farm)
+        );
+
+        assertEq(
+            balanceAfter - balanceBefore,
+            depositAmount
+        );
+    }
+
     /*
     function testAbilityDestroyFutureStaker()
         public
@@ -1649,10 +1730,10 @@ contract TimeLockFarmV2DualTest is Test {
         );
 
         vm.warp(
-            block.timestamp + 4000 days
+            block.timestamp + 365 days * 4
         );
 
-        for (uint256 i = 30; i < 40; i++) {
+        for (uint256 i = 0; i < 80; i++) {
 
             (
                 ,
@@ -1703,6 +1784,16 @@ contract TimeLockFarmV2DualTest is Test {
 
             vm.stopPrank();
         }
+
+        uint256 verseBalanceInFarm = verseToken.balanceOf(
+            address(farm)
+        );
+
+        assertEq(
+            verseBalanceInFarm,
+            0,
+            "Farm should have 0 tokens"
+        );
     }
 
     function testEveryoneWithdrawRightAway()
@@ -1714,6 +1805,10 @@ contract TimeLockFarmV2DualTest is Test {
 
         vm.startPrank(
             ADMIN_ADDRESS
+        );
+
+        uint256 verseBalanceInFarmBefore = verseToken.balanceOf(
+            address(farm)
         );
 
         for (uint256 i = 0; i < 80; i++) {
@@ -1742,13 +1837,22 @@ contract TimeLockFarmV2DualTest is Test {
                 stakeOwner
             );
 
-            console.log(unlockableAmount, 'unlockableAmount');
-            console.log(stakeOwner, 'stakeOwner');
+            assertGt(
+                unlockableAmount,
+                0,
+                "Unlockable amount should be above 0"
+            );
 
             farm.exitFarm();
 
-            uint256 remainingAmount = verseToken.balanceOf(
-                address(farm)
+            unlockableAmount = farm.unlockable(
+                stakeOwner
+            );
+
+            assertEq(
+                unlockableAmount,
+                0,
+                "Unlockable amount should be 0"
             );
 
             uint256 balanceAfter = farm.balanceOf(
@@ -1787,5 +1891,22 @@ contract TimeLockFarmV2DualTest is Test {
 
             vm.stopPrank();
         }
+
+        uint256 verseBalanceInFarm = verseToken.balanceOf(
+            address(farm)
+        );
+
+        assertGt(
+            verseBalanceInFarm,
+            0,
+            "Should stil have some Verse"
+        );
+
+        assertApproxEqRel(
+            verseBalanceInFarm,
+            verseBalanceInFarmBefore * 80 / 100,
+            1E16,
+            "Should stil have some Verse"
+        );
     }
 }
