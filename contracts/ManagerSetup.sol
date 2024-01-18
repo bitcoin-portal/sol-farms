@@ -235,7 +235,7 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
 
         TIME_LOCK_FARM.makeDepositForUser({
             _stakeOwner: allocation.stakeOwner,
-            _stakeAmount: allocation.stakeAmount,
+            _stakeAmount: get100Percent(allocation.stakeAmount),
             _lockingTime: allocation.lockingTime,
             _initialTime: allocation.initialTime
         });
@@ -274,6 +274,16 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
         returns (uint256)
     {
         return _amount * 80E16;
+    }
+
+    function get100Percent(
+        uint256 _amount
+    )
+        public
+        pure
+        returns (uint256)
+    {
+        return _amount * 100E16;
     }
 
     /**
