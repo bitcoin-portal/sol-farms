@@ -14,10 +14,11 @@
 		"test-timelock-v2": "npx hardhat test test/timelock-v2.test.js",
 		"test-timelock-v2-dual": "npx hardhat test test/timelock-v2-dual.test.js",
 		"flatten-timelock": "npx hardhat flatten > TimeLockFarmV2.sol",
-		"coverage": "npx truffle run coverage --network development",
+		"foundry-coverage": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage",
 		"foundry-size": "forge build --sizes",
-        "foundry-test-default": "forge test --gas-report -vvv",
-        "foundry-test-reports": "forge test --gas-report > gasreport.ansi -vvv"
+		"foundry-test-default": "forge test --gas-report -vvv",
+		"foundry-test-reports": "forge test --gas-report > gasreport.ansi -vvv",
+		"deploy-test-token": "forge script contracts/Scripts/Deployer.s.sol:DeployTestToken --broadcast --verify --rpc-url polygon --gas-report"
 	},
 	"repository": {
 		"type": "git",
@@ -66,14 +67,16 @@
 		"yargs": "^16.2.0"
 	},
 	"dependencies": {
-		"@nomicfoundation/hardhat-foundry": "^1.0.3",
 		"@chainlink/contracts": "^0.4.1",
+		"@nomicfoundation/hardhat-foundry": "^1.0.3",
 		"@openzeppelin/contracts": "^4.6.0",
 		"@openzeppelin/test-helpers": "^0.5.13",
 		"@poanet/solidity-flattener": "^3.0.6",
 		"@truffle/hdwallet-provider": "^2.0.13",
+		"cross-fetch": "^4.0.0",
 		"eth-gas-reporter": "^0.2.25",
 		"ganache-cli": "^6.12.2",
+		"node-fetch": "^3.3.2",
 		"truffle-plugin-verify": "^0.5.27"
 	}
 }
