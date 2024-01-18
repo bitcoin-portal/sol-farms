@@ -23,18 +23,12 @@ contract ManagerHelper {
     uint256 public initialTokensRequired;
     uint256 FOUR_YEARS = 365 days * 4;
 
-    uint256 public constant EXPECTED_ALLOCATIONS = 87;
-    uint256 public constant EXPECTED_TOTAL_TOKENS = 6_676_250_000;
+    uint256 public constant EXPECTED_ALLOCATIONS = 80;
+    uint256 public constant EXPECTED_TOTAL_TOKENS = 6_393_750_000;
 
     mapping(uint256 => uint256) expectedUniqueAmounts;
 
     uint256 public jan01_2024 = 1704067200;
-    uint256 public apr01_2024 = 1711929600;
-    uint256 public may01_2024 = 1714521600;
-    uint256 public jul01_2024 = 1719792000;
-    uint256 public aug01_2024 = 1722470400;
-    uint256 public sep01_2024 = 1725148800;
-    uint256 public oct01_2024 = 1727740800;
 
     function _setupAllocations()
         internal
@@ -255,13 +249,6 @@ contract ManagerHelper {
             87_500_000,
             FOUR_YEARS,
             jan01_2024
-        );
-        _pushAllocation(
-            false,
-            0x216b6F99CA2bf53d801fE9Ba7d68fADC4949249B,
-            70_000_000,
-            FOUR_YEARS,
-            apr01_2024
         );
         _pushAllocation(
             true,
@@ -606,48 +593,6 @@ contract ManagerHelper {
             FOUR_YEARS,
             jan01_2024
         );
-        _pushAllocation(
-            false,
-            0xAda591ecBD9EDb88A8CB0270417D5D77C2f944C7,
-            100_000_000,
-            FOUR_YEARS,
-            apr01_2024
-        );
-        _pushAllocation(
-            false,
-            0x7E3d94b6396C659e653F48859118CD2e735c6955,
-            6_250_000,
-            FOUR_YEARS,
-            oct01_2024
-        );
-        _pushAllocation(
-            false,
-            0xA49105aa03810Df66e44AeaD21ccbE908C98BE2E,
-            12_500_000,
-            FOUR_YEARS,
-            aug01_2024
-        );
-        _pushAllocation(
-            false,
-            0x7F7BadeE622D6d1aB597Cfcbf549F4E8c44c384E,
-            25_000_000,
-            FOUR_YEARS,
-            jul01_2024
-        );
-        _pushAllocation(
-            false,
-            0xDb265a7ED888498C4416CfE1DEEd58cf7eFFdFDc,
-            56_250_000,
-            FOUR_YEARS,
-            may01_2024
-        );
-        _pushAllocation(
-            false,
-            0x01b7b155f4934d52AAb625E8F7f20F81f78211Aa,
-            12_500_000,
-            FOUR_YEARS,
-            sep01_2024
-        );
     }
 
     function _pushAllocation(
@@ -719,15 +664,11 @@ contract ManagerHelper {
         );
         _pushUniqueAmount(
             100_000_000,
-            2
+            1
         );
         _pushUniqueAmount(
             87_500_000,
             29
-        );
-        _pushUniqueAmount(
-            70_000_000,
-            1
         );
         _pushUniqueAmount(
             75_000_000,
@@ -739,7 +680,7 @@ contract ManagerHelper {
         );
         _pushUniqueAmount(
             56_250_000,
-            4
+            3
         );
         _pushUniqueAmount(
             50_000_000,
@@ -755,7 +696,7 @@ contract ManagerHelper {
         );
         _pushUniqueAmount(
             25_000_000,
-            4
+            3
         );
         _pushUniqueAmount(
             18_750_000,
@@ -763,11 +704,7 @@ contract ManagerHelper {
         );
         _pushUniqueAmount(
             12_500_000,
-            4
-        );
-        _pushUniqueAmount(
-            6_250_000,
-            1
+            2
         );
         for (uint256 i = 0; i < uniqueAmounts.length; i++) {
             UniqueAmount memory uniqueAmount = uniqueAmounts[i];
