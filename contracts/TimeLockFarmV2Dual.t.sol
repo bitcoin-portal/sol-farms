@@ -1409,6 +1409,88 @@ contract TimeLockFarmV2DualTest is Test {
         );
     }
 
+    function testAbilityDestroyFutureStaker()
+        public
+    {
+        // admin can call destroyStaker on future staker
+        // and it should not be able to withdraw anything
+        // since unlock has not even started
+
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        uint256 balanceBefore = farm.balanceOf(
+            FUTURE_ADDRES
+        );
+
+        assertGt(
+            balanceBefore,
+            0,
+            "User should have some shares"
+        );
+
+        uint256 stakeCountBefore = farm.stakeCount(
+            FUTURE_ADDRES
+        );
+
+        assertEq(
+            stakeCountBefore,
+            1,
+            "User should have 1 stakes initially"
+        );
+
+        uint256 availableToWithdrawBefore = farm.unlockable(
+            FUTURE_ADDRES
+        );
+
+        assertEq(
+            availableToWithdrawBefore,
+            0,
+            "User should have unlockable balance as 0"
+        );
+
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        farm.destroyStaker(
+            false,
+            false,
+            FUTURE_ADDRES
+        );
+
+        uint256 balanceAfter = farm.balanceOf(
+            FUTURE_ADDRES
+        );
+
+        assertEq(
+            balanceAfter,
+            0,
+            "User should have 0 shares"
+        );
+
+        uint256 stakeCountAfter = farm.stakeCount(
+            FUTURE_ADDRES
+        );
+
+        assertEq(
+            stakeCountAfter,
+            0,
+            "User should have 0 stakes"
+        );
+
+        uint256 availableToWithdrawAfter = farm.unlockable(
+            FUTURE_ADDRES
+        );
+
+        assertEq(
+            availableToWithdrawAfter,
+            0,
+            "User should have unlockable balance as 0"
+        );
+    }
+
     function testFutureTimestamps()
         public
     {

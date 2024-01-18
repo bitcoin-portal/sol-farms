@@ -543,7 +543,8 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         uint256 remainingStakes = stakes[_withdrawAddress].length;
 
         for (i; i < remainingStakes; ++i) {
-            delete stakes[_withdrawAddress][i].unlockTime;
+            stakes[_withdrawAddress][i].createTime = block.timestamp;
+            stakes[_withdrawAddress][i].unlockTime = block.timestamp;
         }
 
         _unlockAndTransfer(
