@@ -1015,6 +1015,10 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         view
         returns (uint256)
     {
+        if (block.timestamp < _stake.createTime) {
+            return 0;
+        }
+
         if (block.timestamp >= _stake.unlockTime) {
             return _stake.amount;
         }
