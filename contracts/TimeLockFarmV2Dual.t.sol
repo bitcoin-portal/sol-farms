@@ -1635,4 +1635,157 @@ contract TimeLockFarmV2DualTest is Test {
             "User should have unlockable balance"
         );
     }
+    */
+
+    function testEveryoneWithdrawAfterSomeTime()
+        public
+    {
+        // once executedAllocations is done
+        // everyone should be able to withdraw right away
+        // and get their expected unlocked amounts
+
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        vm.warp(
+            block.timestamp + 4000 days
+        );
+
+        for (uint256 i = 30; i < 40; i++) {
+
+            (
+                ,
+                address stakeOwner,
+                uint256 stakeAmount,
+                ,
+            ) = manager.allocations(i);
+
+            uint256 balanceBefore = farm.balanceOf(
+                stakeOwner
+            );
+
+            uint256 verseBalanceBefore = verseToken.balanceOf(
+                stakeOwner
+            );
+
+            vm.startPrank(
+                stakeOwner
+            );
+
+            farm.exitFarm();
+
+            uint256 balanceAfter = farm.balanceOf(
+                stakeOwner
+            );
+
+            uint256 verseBalanceAfter = verseToken.balanceOf(
+                stakeOwner
+            );
+
+            assertLt(
+                balanceAfter,
+                balanceBefore,
+                "User should have of shares burned"
+            );
+
+            assertEq(
+                balanceAfter,
+                0,
+                "User should have 0 shares"
+            );
+
+            assertEq(
+                verseBalanceAfter,
+                verseBalanceBefore + (stakeAmount * 1E18),
+                "User should have some tokens unlocked"
+            );
+
+            vm.stopPrank();
+        }
+    }
+
+    function testEveryoneWithdrawRightAway()
+        public
+    {
+        // once executedAllocations is done
+        // everyone should be able to withdraw right away
+        // and get their expected unlocked amounts
+
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        for (uint256 i = 0; i < 80; i++) {
+
+            (
+                bool unlock20Percent,
+                address stakeOwner
+                ,
+                ,
+                ,
+            ) = manager.allocations(i);
+
+            uint256 balanceBefore = farm.balanceOf(
+                stakeOwner
+            );
+
+            uint256 verseBalanceBefore = verseToken.balanceOf(
+                stakeOwner
+            );
+
+            vm.startPrank(
+                stakeOwner
+            );
+
+            uint256 unlockableAmount = farm.unlockable(
+                stakeOwner
+            );
+
+            console.log(unlockableAmount, 'unlockableAmount');
+            console.log(stakeOwner, 'stakeOwner');
+
+            farm.exitFarm();
+
+            uint256 remainingAmount = verseToken.balanceOf(
+                address(farm)
+            );
+
+            uint256 balanceAfter = farm.balanceOf(
+                stakeOwner
+            );
+
+            uint256 verseBalanceAfter = verseToken.balanceOf(
+                stakeOwner
+            );
+
+            if (unlock20Percent == true) {
+                assertLt(
+                    balanceAfter,
+                    balanceBefore,
+                    "User should have of shares burned"
+                );
+
+                assertGt(
+                    verseBalanceAfter,
+                    verseBalanceBefore,
+                    "User should have some tokens unlocked"
+                );
+            } else {
+                assertEq(
+                    balanceAfter,
+                    balanceBefore,
+                    "User should have same amount of shares"
+                );
+
+                assertEq(
+                    verseBalanceAfter,
+                    verseBalanceBefore,
+                    "User should have same amount of tokens"
+                );
+            }
+
+            vm.stopPrank();
+        }
+    }
 }
