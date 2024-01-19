@@ -1095,6 +1095,10 @@ contract TimeLockFarmV2Dual is TokenWrapper {
         return true;
     }
 
+    /**
+     * @dev Grants permission for receipt
+     * tokens transfers between accounts
+     */
     function setAllowTransfer(
         bool _allowTransfer
     )
