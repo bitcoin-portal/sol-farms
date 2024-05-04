@@ -108,3 +108,10 @@ cache/*
 out/*
 forge-cache/solidity-files-cache.json
 forge-cache/solidity-files-cache.json
+out/*
+.vscode/settings.json
+.vscode/tasks.json
+lcov.info
+out/test.sol/Test.json
+broadcast/*
+out/*
