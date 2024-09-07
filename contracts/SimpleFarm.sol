@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: -- BCOM --
 
-pragma solidity =0.8.23;
+pragma solidity =0.8.25;
 
 import "./TokenWrapper.sol";
 
 contract SimpleFarm is TokenWrapper {
 
-    IERC20 public immutable stakeToken;
-    IERC20 public immutable rewardToken;
+    IERC20 public stakeToken;
+    IERC20 public rewardToken;
 
     uint256 public rewardRate;
     uint256 public periodFinished;
@@ -99,21 +99,25 @@ contract SimpleFarm is TokenWrapper {
         address newManager
     );
 
-    constructor(
-        IERC20 _stakeToken,
-        IERC20 _rewardToken,
-        uint256 _defaultDuration
-    ) {
+    function initialize(
+        address _stakeToken,
+        address _rewardToken,
+        uint256 _defaultDuration,
+        address _ownerAddress,
+        address _managerAddress
+    )
+        external
+    {
         require(
             _defaultDuration > 0,
             "SimpleFarm: INVALID_DURATION"
         );
 
-        stakeToken = _stakeToken;
-        rewardToken = _rewardToken;
+        stakeToken = IERC20(_stakeToken);
+        rewardToken = IERC20(_rewardToken);
 
-        ownerAddress = msg.sender;
-        managerAddress = msg.sender;
+        ownerAddress = _ownerAddress;
+        managerAddress = _managerAddress;
 
         rewardDuration = _defaultDuration;
     }
