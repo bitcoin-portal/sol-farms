@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: -- BCOM --
 
-pragma solidity =0.8.23;
+pragma solidity =0.8.25;
 
 struct Allocation {
     bool unlock20Percent;
@@ -26,9 +26,10 @@ contract ManagerHelper {
     uint256 public constant EXPECTED_ALLOCATIONS = 80;
     uint256 public constant EXPECTED_TOTAL_TOKENS = 6_393_750_000;
 
-    mapping(uint256 => uint256) expectedUniqueAmounts;
+    mapping(address => uint256) public expectedInitialAmount;
+    mapping(uint256 => uint256) public expectedUniqueAmounts;
 
-    uint256 public jan01_2024 = 1704067200;
+    uint256 internal jan01_2024 = 1704067200;
 
     function _setupAllocations()
         internal
@@ -613,8 +614,10 @@ contract ManagerHelper {
                 initialTime: _initialTime
             })
         );
+
         initialTokensRequired += _stakeAmount;
         expectedUniqueAmounts[_stakeAmount] -= 1;
+        expectedInitialAmount[_stakeOwner] = _stakeAmount;
     }
 
     function _pushUniqueAmount(

@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: -- BCOM --
 
-pragma solidity =0.8.23;
+pragma solidity =0.8.25;
 
-import "./TokenWrapper.sol";
+import "./TokenWrapperSQRT.sol";
+import "./Babylonian.sol";
 
-contract PrivateFarm2X is TokenWrapper {
+contract PrivateFarm2X is TokenWrapperSQRT {
 
     IERC20 public immutable stakeToken;
     IERC20 public immutable rewardTokenA;

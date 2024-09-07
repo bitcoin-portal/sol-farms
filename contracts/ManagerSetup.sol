@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: -- BCOM --
 
-pragma solidity =0.8.23;
+pragma solidity =0.8.25;
 
 import "./SafeERC20.sol";
 import "./ITimeLockFarmV2Dual.sol";
 
-import "./ManagerHelper.sol";
-
-contract ManagerSetup is ManagerHelper, SafeERC20 {
+contract ManagerSetup is SafeERC20 {
 
     IERC20 public immutable VERSE;
     IERC20 public immutable STABLECOIN;
@@ -66,26 +64,57 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
             address(TIME_LOCK_FARM),
             type(uint256).max
         );
+    }
 
-        _setupAmounts();
-        _setupAllocations();
-
-        require(
-            allocations.length == EXPECTED_ALLOCATIONS,
-            "ManagerSetup: ALLOCATIONS_COUNT_MISMATCH"
+    function makeApproval(
+        IERC20 _token,
+        address _spender,
+        uint256 _amount
+    )
+        external
+        onlyOwner
+    {
+        _token.approve(
+            _spender,
+            _amount
         );
+    }
 
-        require(
-            initialTokensRequired == EXPECTED_TOTAL_TOKENS,
-            "ManagerSetup: EXPECTED_TOKENS_MISMATCH"
+    function claimOwnershipAnyFarm(
+        address _farm
+    )
+        external
+        onlyOwner
+    {
+        ITimeLockFarmV2Dual(_farm).claimOwnership();
+    }
+
+    function proposeNewOwnerAnyFarm(
+        address _farm,
+        address _newOwner
+    )
+        external
+        onlyOwner
+    {
+        ITimeLockFarmV2Dual(
+            _farm
+        ).proposeNewOwner(
+            _newOwner
         );
+    }
 
-        for (uint256 i; i < uniqueAmounts.length; i++) {
-            require(
-                expectedUniqueAmounts[uniqueAmounts[i].amount] == 0,
-                "ManagerSetup: UNIQUE_AMOUNT_MISMATCH"
-            );
-        }
+    function changeManagerAnyFarm(
+        address _farm,
+        address _newManager
+    )
+        external
+        onlyOwner
+    {
+        ITimeLockFarmV2Dual(
+            _farm
+        ).changeManager(
+            _newManager
+        );
     }
 
     /**
@@ -168,122 +197,27 @@ contract ManagerSetup is ManagerHelper, SafeERC20 {
     }
 
     /**
-     * @dev Performs a deposit for all users
-     * from the allocations array. This function
-     * can be called only once by worker once
-     * the contract is deployed and funded.
+     * @dev Performs a deposit for a user
+     * from the owner of the contract.
      */
-    function executeAllocations()
+    function makeDepositForUserFinalDate(
+        address _stakeOwner,
+        uint256 _stakeAmount,
+        uint256 _finalDate,
+        uint256 _initialTime
+    )
         external
-        onlyWorker
+        onlyOwner
     {
-        require(
-            isInitialized == false,
-            "ManagerSetup: ALREADY_INITIALIZED"
+        uint256 lockingTime = _finalDate
+            - block.timestamp;
+
+        TIME_LOCK_FARM.makeDepositForUser(
+            _stakeOwner,
+            _stakeAmount,
+            lockingTime,
+            _initialTime
         );
-
-        isInitialized = true;
-
-        uint256 i;
-        uint256 l = allocations.length;
-
-        while (i < l) {
-
-            _preventDuplicate(
-                allocations[i].stakeOwner
-            );
-
-            bool res = _executeAllocation(
-                allocations[i]
-            );
-
-            require(
-                res == allocations[i].unlock20Percent,
-                "ManagerSetup: ALLOCATION_MALFORMED"
-            );
-
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    function _executeAllocation(
-        Allocation memory allocation
-    )
-        internal
-        returns (bool)
-    {
-        if (allocation.unlock20Percent == true) {
-
-            TIME_LOCK_FARM.makeDepositForUser({
-                _stakeOwner: allocation.stakeOwner,
-                _stakeAmount: get20Percent(allocation.stakeAmount),
-                _lockingTime: 0,
-                _initialTime: block.timestamp
-            });
-
-            TIME_LOCK_FARM.makeDepositForUser({
-                _stakeOwner: allocation.stakeOwner,
-                _stakeAmount: get80Percent(allocation.stakeAmount),
-                _lockingTime: allocation.lockingTime,
-                _initialTime: allocation.initialTime
-            });
-
-            return true;
-        }
-
-        TIME_LOCK_FARM.makeDepositForUser({
-            _stakeOwner: allocation.stakeOwner,
-            _stakeAmount: get100Percent(allocation.stakeAmount),
-            _lockingTime: allocation.lockingTime,
-            _initialTime: allocation.initialTime
-        });
-
-        return false;
-    }
-
-    function _preventDuplicate(
-        address _stakeOwner
-    )
-        internal
-    {
-        require(
-            isAllocationExecuted[_stakeOwner] == false,
-            "ManagerSetup: DUPLICATE_ALLOCATION"
-        );
-
-        isAllocationExecuted[_stakeOwner] = true;
-    }
-
-    function get20Percent(
-        uint256 _amount
-    )
-        public
-        pure
-        returns (uint256)
-    {
-        return _amount * 20E16;
-    }
-
-    function get80Percent(
-        uint256 _amount
-    )
-        public
-        pure
-        returns (uint256)
-    {
-        return _amount * 80E16;
-    }
-
-    function get100Percent(
-        uint256 _amount
-    )
-        public
-        pure
-        returns (uint256)
-    {
-        return _amount * 100E16;
     }
 
     /**

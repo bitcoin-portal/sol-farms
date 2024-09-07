@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: -- WISE --
 
-pragma solidity =0.8.23;
+pragma solidity =0.8.25;
 
 import "forge-std/Test.sol";
 import "./Counter.sol";

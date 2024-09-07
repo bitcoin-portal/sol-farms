@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: -- BCOM --
 
-pragma solidity =0.8.23;
+pragma solidity =0.8.25;
 
 import "./SafeERC20.sol";
 import "./Babylonian.sol";
@@ -13,7 +13,6 @@ contract TokenWrapper is SafeERC20 {
     uint8 public constant decimals = 18;
 
     uint256 _totalStaked;
-    uint256 _totalStakedSQRT;
 
     mapping(address => uint256) _balances;
     mapping(address => mapping(address => uint256)) _allowances;
@@ -44,17 +43,6 @@ contract TokenWrapper is SafeERC20 {
     }
 
     /**
-     * @dev Returns SQR tracker for total staked amount
-     */
-    function totalSupplySQR()
-        external
-        view
-        returns (uint256)
-    {
-        return _totalStakedSQRT;
-    }
-
-    /**
      * @dev Returns staked amount by wallet address
      */
     function balanceOf(
@@ -79,11 +67,6 @@ contract TokenWrapper is SafeERC20 {
         _totalStaked =
         _totalStaked + _amount;
 
-        _totalStakedSQRT =
-        _totalStakedSQRT + Babylonian.sqrt(
-            _amount
-        );
-
         unchecked {
             _balances[_address] =
             _balances[_address] + _amount;
@@ -105,14 +88,24 @@ contract TokenWrapper is SafeERC20 {
     )
         internal
     {
+        _burn(
+            _amount,
+            _address
+        );
+    }
+
+    /**
+     * @dev Decreases total staked amount
+     */
+    function _burn(
+        uint256 _amount,
+        address _address
+    )
+        internal
+    {
         unchecked {
             _totalStaked =
             _totalStaked - _amount;
-
-            _totalStakedSQRT =
-            _totalStakedSQRT - Babylonian.sqrt(
-                _amount
-            );
         }
 
         _balances[_address] =

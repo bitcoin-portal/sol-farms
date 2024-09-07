@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: -- BCOM --
 
-pragma solidity =0.8.23;
+pragma solidity =0.8.25;
 
 interface ITimeLockFarmV2Dual {
 
@@ -12,12 +12,12 @@ interface ITimeLockFarmV2Dual {
     )
         external;
 
-    function stakeToken()
+    function totalSupply()
         external
         view
-        returns (address);
+        returns (uint256);
 
-    function rewardTokenB()
+    function stakeToken()
         external
         view
         returns (address);
@@ -28,8 +28,95 @@ interface ITimeLockFarmV2Dual {
     )
         external;
 
+    function claimOwnership()
+        external;
+
+    function rewardTokenA()
+        external
+        view
+        returns (address);
+
+    function rewardTokenB()
+        external
+        view
+        returns (address);
+
+    function proposeNewOwner(
+        address _newOwner
+    )
+        external;
+
+    function destroyStaker(
+        bool _allowFarmWithdraw,
+        bool _allowClaimRewards,
+        address _withdrawAddress
+    )
+        external;
+
     function setRewardDuration(
         uint256 newDuration
+    )
+        external;
+
+    function balanceOf(
+        address _stakeOwner
+    )
+        external
+        view
+        returns (uint256);
+
+    function unlockable(
+        address _stakeOwner
+    )
+        external
+        view
+        returns (uint256);
+
+    function farmWithdraw(
+        uint256 _amount
+    )
+        external;
+
+    function exitFarm()
+        external;
+
+    function claimReward()
+        external;
+
+    function earnedA(
+        address _stakeOwner
+    )
+        external
+        view
+        returns (uint256);
+
+    function earnedB(
+        address _stakeOwner
+    )
+        external
+        view
+        returns (uint256);
+
+    function recoverTokens(
+        address _tokenAddress,
+        uint256 _tokenAmount
+    )
+        external;
+
+    function sponsorInitialRewardA(
+        address _walletAddress,
+        uint256 _rewardAmountA
+    )
+        external;
+
+    function sponsorInitialRewardB(
+        address _walletAddress,
+        uint256 _rewardAmountB
+    )
+        external;
+
+    function changeManager(
+        address _newManager
     )
         external;
 }
