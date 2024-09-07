@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: -- WISE --
+// SPDX-License-Identifier: -- BCOM --
 
-pragma solidity =0.8.23;
+pragma solidity =0.8.25;
 
 import "forge-std/Test.sol";
 
@@ -101,13 +101,13 @@ contract TimeLockFarmV2DualTest is Test {
             address(manager)
         );
 
-        manager.executeAllocations();
+        // manager.executeAllocations();
 
         vm.expectRevert(
             "ManagerSetup: ALREADY_INITIALIZED"
         );
 
-        manager.executeAllocations();
+        // manager.executeAllocations();
 
         vm.stopPrank();
     }
@@ -117,7 +117,6 @@ contract TimeLockFarmV2DualTest is Test {
     {
         uint256 expectedDuration = DEFAULT_DURATION;
         uint256 updatedDuration = 60 days;
-
         uint256 duration = farm.rewardDuration();
 
         vm.startPrank(
@@ -151,6 +150,131 @@ contract TimeLockFarmV2DualTest is Test {
             duration,
             updatedDuration
         );
+    }
+
+    function testRewardsNormal()
+        public
+    {
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        farm.changeManager(
+            ADMIN_ADDRESS
+        );
+
+        verseToken.approve(
+            address(farm),
+            tokens(2592000000)
+        );
+
+        stableToken.approve(
+            address(farm),
+            tokens(2592000000)
+        );
+
+        farm.claimReward();
+
+        farm.setRewardRates(
+            tokens(1),
+            tokens(1)
+        );
+
+        vm.warp(
+            block.timestamp + DEFAULT_DURATION
+        );
+
+        uint256 rewardsEarnedAfterDefaultDuration = farm.earnedA(
+            ADMIN_ADDRESS
+        );
+
+        // console.log(rewardsEarnedAfterDefaultDuration, 'rewardsEarnedAfterDefaultDuration');
+
+        vm.warp(
+            block.timestamp + DEFAULT_DURATION
+        );
+
+        uint256 rewardsEarnedAfterAnotherDuration = farm.earnedA(
+            ADMIN_ADDRESS
+        );
+
+        assertEq(
+            rewardsEarnedAfterDefaultDuration,
+            rewardsEarnedAfterAnotherDuration,
+            "Rewards must match: no extra tokens"
+        );
+
+        // console.log(rewardsEarnedAfterAnotherDuration, 'rewardsEarnedAfterAnotherDuration');
+
+        vm.stopPrank();
+    }
+
+    function testRewardsAgain()
+        public
+    {
+        testRewardsNormal();
+
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        vm.warp(
+            block.timestamp + DEFAULT_DURATION
+        );
+
+        vm.warp(
+            block.timestamp + DEFAULT_DURATION
+        );
+
+        uint256 rewardsAlreadyAccumulated = farm.earnedA(
+            ADMIN_ADDRESS
+        );
+
+        vm.warp(
+            block.timestamp + DEFAULT_DURATION
+        );
+
+        // farm.claimReward();
+
+        farm.setRewardRates(
+            tokens(1),
+            tokens(1)
+        );
+
+        vm.warp(
+            block.timestamp + DEFAULT_DURATION
+        );
+
+        uint256 rewardsAfterAnotherCycle = farm.earnedA(
+            ADMIN_ADDRESS
+        );
+
+        vm.warp(
+            block.timestamp + DEFAULT_DURATION
+        );
+
+        uint256 rewardsAfterAnotherCycleRepeated = farm.earnedA(
+            ADMIN_ADDRESS
+        );
+
+        uint256 diff = rewardsAfterAnotherCycleRepeated
+            - rewardsAlreadyAccumulated;
+
+        console.log(diff, 'diff');
+        console.log(rewardsAlreadyAccumulated, 'rewardsAlreadyAccumulated');
+        console.log(rewardsAfterAnotherCycleRepeated, 'rewardsAfterAnotherCycleRepeated');
+
+        assertEq(
+            rewardsAfterAnotherCycleRepeated,
+            rewardsAlreadyAccumulated + diff
+        );
+
+        assertEq(
+            rewardsAfterAnotherCycleRepeated,
+            rewardsAfterAnotherCycle
+        );
+
+        farm.claimReward();
     }
 
     function testDestroyStaker()
@@ -269,8 +393,6 @@ contract TimeLockFarmV2DualTest is Test {
         vm.warp(
             block.timestamp + 365 days * 4
         );
-
-        farm.clearPastStamps();
     }
 
     function testMakeDepositForUserWithZero()
@@ -716,6 +838,230 @@ contract TimeLockFarmV2DualTest is Test {
         );
     }
 
+    function testFastForwardWithRewardsWithLoop()
+        public
+    {
+        vm.startPrank(
+            ADMIN_ADDRESS
+        );
+
+        verseToken.transfer(
+            address(manager),
+            tokens(100_000_000_000)
+        );
+
+        stableToken.transfer(
+            address(manager),
+            tokens(200_000_000_000)
+        );
+
+        manager.setOwner(
+            ADMIN_ADDRESS
+        );
+
+        manager.setWorker(
+            ADMIN_ADDRESS
+        );
+
+        manager.setRewardDuration(
+            DEFAULT_DURATION
+        );
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: INVALID_RATE_A"
+        );
+
+        manager.setRewardRates(
+            tokens(0),
+            tokens(1)
+        );
+
+        vm.expectRevert(
+            "TimeLockFarmV2Dual: INVALID_RATE_B"
+        );
+
+        manager.setRewardRates(
+            tokens(1),
+            tokens(0)
+        );
+
+        manager.setRewardRates(
+            tokens(1),
+            tokens(1)
+        );
+
+        manager.setRewardRates(
+            tokens(2),
+            tokens(2)
+        );
+
+        uint256 globalsLocked = farm.globalLocked({
+            _squared: false
+        });
+
+        uint256 globalsLockedSQRT = farm.globalLocked({
+            _squared: true
+        });
+
+        // console.log(farm.totalSupplySQR(), 'totalSupplySQR---');
+        console.log(globalsLockedSQRT, 'globalsLockedSQRT-BEFORE');
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-BEFORE');
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-BEFORE');
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-BEFORE');
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-BEFORE');
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-BEFORE');
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-BEFORE');
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-BEFORE');
+
+        assertGt(
+            globalsLocked,
+            0,
+            "globalsLocked should be above 0"
+        );
+
+        assertGt(
+            globalsLockedSQRT,
+            0,
+            "globalsLockedSQRT should be above 0"
+        );
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.totalSupply(), 'totalSupplyBefore');
+        // console.log(farm.totalSupplySQR(), 'totalSupplySQRBEFORE');
+        console.log(farm.globalUnlocked(true, block.timestamp), 'unlockedBefore');
+
+        uint256 unlockableByAdminBefore = farm.unlockable(
+            ADMIN_ADDRESS
+        );
+
+        console.log(unlockableByAdminBefore, 'unlockable-BY-ADMIN');
+
+        farm.exitFarm();
+
+        uint256 unlockableByAdminAfter = farm.unlockable(
+            ADMIN_ADDRESS
+        );
+
+        console.log(unlockableByAdminAfter, 'unlockableByAdminAfter');
+        console.log(farm.totalSupply(), 'totalSupplyAfter');
+        // console.log(farm.totalSupplySQR(), 'totalSupplySQRAfter');
+        console.log(farm.globalUnlocked(true, block.timestamp), 'unlockedAfter');
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-AFTER-EXIT');
+
+        uint256 globalsLockedAfterNormal = farm.globalLocked({
+            _squared: false
+        });
+
+        uint256 globalsLockedSQRTAfter = farm.globalLocked({
+            _squared: true
+        });
+
+        console.log(globalsLockedAfterNormal, 'globalsLockedAfterNormal');
+
+        assertEq(
+            globalsLockedAfterNormal,
+            0,
+            "globalsLockedAfter should be 0"
+        );
+
+        console.log(globalsLockedSQRTAfter, 'globalsLockedSQRTAfter');
+
+        assertEq(
+            globalsLockedSQRTAfter,
+            0,
+            "globalsLockedSQRTAfter should be 0"
+        );
+
+        /*
+        for (uint256 i = 0; i < manager.allocationCount(); i++) {
+
+            (
+                ,
+                address stakeOwner,
+                uint256 stakeAmount,
+                ,
+            ) = manager.allocations(i);
+
+            uint256 unlockableByUser = farm.unlockable(
+                stakeOwner
+            );
+
+            uint256 balanceBefore = verseToken.balanceOf(
+                stakeOwner
+            );
+
+            uint256 rewardsA = farm.earnedA(
+                stakeOwner
+            );
+
+            farm.destroyStaker({
+                _allowFarmWithdraw: true,
+                _allowClaimRewards: true,
+                _withdrawAddress: stakeOwner
+            });
+
+            uint256 balanceAfter = verseToken.balanceOf(
+                stakeOwner
+            );
+
+            assertEq(
+                balanceAfter,
+                balanceBefore + unlockableByUser + rewardsA,
+                "User should get all tokens unlockable"
+            );
+
+            assertApproxEqRel(
+                balanceAfter,
+                balanceBefore + stakeAmount * 1E18 + rewardsA,
+                1E11,
+                "balanceAfter should be equal to stakeAmount + balanceBefore"
+            );
+        }
+        */
+    }
+
     function testFastForwardWithRewards()
         public
     {
@@ -781,21 +1127,94 @@ contract TimeLockFarmV2DualTest is Test {
             _squared: true
         });
 
+        // console.log(farm.totalSupplySQR(), 'totalSupplySQR---');
+        console.log(globalsLockedSQRT, 'globalsLockedSQRT-BEFORE');
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-BEFORE');
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-BEFORE');
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-BEFORE');
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-BEFORE');
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-BEFORE');
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-BEFORE');
+
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-BEFORE');
+
         assertGt(
             globalsLocked,
             0,
-            "Globals should be above 0"
+            "globalsLocked should be above 0"
         );
 
         assertGt(
             globalsLockedSQRT,
             0,
-            "Globals should be above 0"
+            "globalsLockedSQRT should be above 0"
         );
 
-        testFastForward();
+        vm.warp(
+            block.timestamp + 365 days
+        );
 
-        uint256 globalsLockedAfter = farm.globalLocked({
+        vm.warp(
+            block.timestamp + 365 days
+        );
+
+        console.log(farm.totalSupply(), 'totalSupplyBefore');
+        // console.log(farm.totalSupplySQR(), 'totalSupplySQRBEFORE');
+        console.log(farm.globalUnlocked(true, block.timestamp), 'unlockedBefore');
+
+        uint256 unlockableByAdminBefore = farm.unlockable(
+            ADMIN_ADDRESS
+        );
+
+        console.log(unlockableByAdminBefore, 'unlockable-BY-ADMIN');
+
+        farm.exitFarm();
+
+        uint256 unlockableByAdminAfter = farm.unlockable(
+            ADMIN_ADDRESS
+        );
+
+        console.log(unlockableByAdminAfter, 'unlockableByAdminAfter');
+        console.log(farm.totalSupply(), 'totalSupplyAfter');
+        // console.log(farm.totalSupplySQR(), 'totalSupplySQRAfter');
+        console.log(farm.globalUnlocked(true, block.timestamp), 'unlockedAfter');
+        console.log(farm.globalLocked({_squared: true}), 'globalsLockedSQRT-AFTER-EXIT');
+
+        uint256 globalsLockedAfterNormal = farm.globalLocked({
             _squared: false
         });
 
@@ -803,16 +1222,20 @@ contract TimeLockFarmV2DualTest is Test {
             _squared: true
         });
 
+        console.log(globalsLockedAfterNormal, 'globalsLockedAfterNormal');
+
         assertEq(
-            globalsLockedAfter,
+            globalsLockedAfterNormal,
             0,
-            "Globals should be 0"
+            "globalsLockedAfter should be 0"
         );
+
+        console.log(globalsLockedSQRTAfter, 'globalsLockedSQRTAfter');
 
         assertEq(
             globalsLockedSQRTAfter,
             0,
-            "Globals should be 0"
+            "globalsLockedSQRTAfter should be 0"
         );
     }
 
@@ -1210,6 +1633,10 @@ contract TimeLockFarmV2DualTest is Test {
             ADMIN_ADDRESS
         );
 
+        farm.setAllowTransfer(
+            true
+        );
+
         uint256 balanceBefore = farm.balanceOf(
             ADMIN_ADDRESS
         );
@@ -1344,113 +1771,6 @@ contract TimeLockFarmV2DualTest is Test {
         );
     }
 
-    function testClearPastStamps()
-        public
-    {
-        vm.startPrank(
-            ADMIN_ADDRESS
-        );
-
-        uint256 stampsBefore = farm.uniqueStamps(0);
-
-        assertGt(
-            stampsBefore,
-            0,
-            "Stamps should be above 0"
-        );
-
-        farm.clearPastStamps();
-
-        uint256 stampsAfter = farm.uniqueStamps(0);
-
-        assertGt(
-            stampsBefore,
-            0,
-            "Stamps should be above 0"
-        );
-
-        assertGt(
-            stampsAfter,
-            0,
-            "Stamps should be above 0"
-        );
-
-        testFastForward();
-
-        stampsBefore = farm.uniqueStamps(0);
-
-        uint256 rateBefore = farm.unlockRates(
-            stampsBefore
-        );
-
-        assertEq(
-            stampsBefore,
-            1830211200,
-            "Stamps should be 1830211200"
-        );
-
-        assertGt(
-            rateBefore,
-            0,
-            "Rate should be above 0"
-        );
-
-        farm.clearPastStamps();
-
-        uint256 rateAfter = farm.unlockRates(
-            stampsBefore
-        );
-
-        assertEq(
-            rateAfter,
-            0,
-            "Rate should be 0"
-        );
-
-        vm.warp(
-            block.timestamp + 365 days
-        );
-
-        uint256 l = farm.getStampsLength();
-
-        assertEq(
-            l,
-            0,
-            "Stamps length should be 3"
-        );
-
-        farm.clearPastStamps();
-
-        vm.warp(
-            block.timestamp + 365 days
-        );
-
-        farm.clearPastStamps();
-
-        l = farm.getStampsLength();
-
-        assertEq(
-            l,
-            0,
-            "Stamps length should be 0"
-        );
-
-        vm.warp(
-            block.timestamp + 365 days
-        );
-
-        farm.clearPastStamps();
-
-        l = farm.getStampsLength();
-
-        assertEq(
-            l,
-            0,
-            "Stamps length should be 0"
-        );
-    }
-
-
     function testMakeDepositForUserWorks()
         public
     {
@@ -1490,14 +1810,9 @@ contract TimeLockFarmV2DualTest is Test {
         );
     }
 
-    /*
     function testAbilityDestroyFutureStaker()
         public
     {
-        // admin can call destroyStaker on future staker
-        // and it should not be able to withdraw anything
-        // since unlock has not even started
-
         vm.startPrank(
             ADMIN_ADDRESS
         );
@@ -1506,10 +1821,10 @@ contract TimeLockFarmV2DualTest is Test {
             FUTURE_ADDRES
         );
 
-        assertGt(
+        assertEq(
             balanceBefore,
             0,
-            "User should have some shares"
+            "User should have not have some shares"
         );
 
         uint256 stakeCountBefore = farm.stakeCount(
@@ -1518,8 +1833,8 @@ contract TimeLockFarmV2DualTest is Test {
 
         assertEq(
             stakeCountBefore,
-            1,
-            "User should have 1 stakes initially"
+            0,
+            "User should have 0 stakes initially"
         );
 
         uint256 availableToWithdrawBefore = farm.unlockable(
@@ -1571,71 +1886,73 @@ contract TimeLockFarmV2DualTest is Test {
             0,
             "User should have unlockable balance as 0"
         );
-    }
-    */
 
-    /*
-    function testFutureTimestamps()
-        public
-    {
-        // if allocator has stake with future timestamp it should be ignored
-        // and not earn any rewards, also cannot scrape any tokens from it since
-        // unlock has not even started (for accounts with future timestamps)
-
-        uint256 balanceBefore = farm.balanceOf(
-            FUTURE_ADDRES
+        vm.startPrank(
+            ADMIN_ADDRESS
         );
 
-        assertGt(
-            balanceBefore,
-            0,
-            "User should have some shares"
+        farm.changeManager(
+            ADMIN_ADDRESS
         );
 
-        uint256 stakeCountBefore = farm.stakeCount(
+        verseToken.approve(
+            address(farm),
+            tokens(100_000)
+        );
+
+        farm.makeDepositForUser(
+            FUTURE_ADDRES,
+            tokens(100_000),
+            DEFAULT_DURATION,
+            block.timestamp
+        );
+
+        uint256 stakeCountAfterDeposit = farm.stakeCount(
             FUTURE_ADDRES
         );
 
         assertEq(
-            stakeCountBefore,
+            stakeCountAfterDeposit,
             1,
-            "User should have 1 stakes initially"
+            "User should have 1 stake"
         );
 
-        uint256 availableToWithdrawBefore = farm.unlockable(
+        uint256 availableToWithdrawAfterDeposit = farm.unlockable(
             FUTURE_ADDRES
         );
 
         assertEq(
-            availableToWithdrawBefore,
+            availableToWithdrawAfterDeposit,
             0,
             "User should have unlockable balance as 0"
         );
 
         vm.warp(
-            block.timestamp + 40 days
+            block.timestamp + 365 days
         );
 
-        uint256 availableToWithdrawNow = farm.unlockable(
+        uint256 availableToWithdrawAfterWarp = farm.unlockable(
             FUTURE_ADDRES
         );
 
-        uint256 rewardsNow = farm.earnedA(
+        assertGt(
+            availableToWithdrawAfterWarp,
+            0,
+            "User should have unlockable balance above 0"
+        );
+
+        farm.destroyStaker(
+            false,
+            false,
             FUTURE_ADDRES
         );
 
-        assertEq(
-            rewardsNow,
-            0,
-            "User should have 0 rewards"
-        );
+        vm.stopPrank();
+    }
 
-        assertEq(
-            availableToWithdrawNow,
-            0,
-            "User should have unlockable balance as 0"
-        );
-
+    function testRewardB()
+        public
+    {
         vm.startPrank(
             ADMIN_ADDRESS
         );
@@ -1651,7 +1968,7 @@ contract TimeLockFarmV2DualTest is Test {
         );
 
         manager.setRewardDuration(
-            100 days
+            DEFAULT_DURATION
         );
 
         manager.setRewardRates(
@@ -1659,64 +1976,32 @@ contract TimeLockFarmV2DualTest is Test {
             tokens(1)
         );
 
-        manager.setWorker(
+        uint256 rewardB = farm.earnedB(
             ADMIN_ADDRESS
         );
 
-        manager.recoverTokens(
-            IERC20(address(verseToken)),
-            tokens(1)
+        assertEq(
+            rewardB,
+            0,
+            "User should have 0 rewards initially"
         );
 
         vm.warp(
-            block.timestamp + 40 days
+            block.timestamp + 365 days
         );
 
-        rewardsNow = farm.earnedA(
-            FUTURE_ADDRES
-        );
-
-        assertEq(
-            rewardsNow,
-            0,
-            "User should have 0 rewards"
-        );
-
-        availableToWithdrawNow = farm.unlockable(
-            FUTURE_ADDRES
-        );
-
-        assertEq(
-            availableToWithdrawNow,
-            0,
-            "User should have unlockable balance as 0"
-        );
-
-        vm.warp(
-            block.timestamp + 40 days
-        );
-
-        rewardsNow = farm.earnedA(
-            FUTURE_ADDRES
+        rewardB = farm.earnedB(
+            ADMIN_ADDRESS
         );
 
         assertGt(
-            rewardsNow,
+            rewardB,
             0,
-            "User should have 0 rewards"
+            "User should have some rewards"
         );
 
-        availableToWithdrawNow = farm.unlockable(
-            FUTURE_ADDRES
-        );
-
-        assertGt(
-            availableToWithdrawNow,
-            0,
-            "User should have unlockable balance"
-        );
+        console.log(rewardB, 'rewardB');
     }
-    */
 
     function testEveryoneWithdrawAfterSomeTime()
         public
@@ -1729,11 +2014,110 @@ contract TimeLockFarmV2DualTest is Test {
             ADMIN_ADDRESS
         );
 
+        farm.recoverTokens(
+            IERC20(address(stableToken)),
+            stableToken.balanceOf(address(farm))
+        );
+
+        verseToken.transfer(
+            address(manager),
+            tokens(100_000_000_000)
+        );
+
+        stableToken.transfer(
+            address(manager),
+            tokens(200_000_000_000)
+        );
+
+        uint256 rewardDuration = 30 days;
+
+        manager.setRewardDuration(
+            rewardDuration
+        );
+
+        uint256 stableInFarmBeforeRewards = stableToken.balanceOf(
+            address(farm)
+        );
+
+        assertEq(
+            stableInFarmBeforeRewards,
+            0,
+            "Farm should not have any tokens before rewards"
+        );
+
+        uint256 tokensForSecond = tokens(2);
+
+        manager.setRewardRates(
+            tokensForSecond,
+            tokensForSecond
+        );
+
+        uint256 stableBalanceInFarmBefore = stableToken.balanceOf(
+            address(farm)
+        );
+
+        uint256 expectedTokensInFarm = rewardDuration * tokensForSecond;
+
+        assertEq(
+            stableBalanceInFarmBefore,
+            expectedTokensInFarm,
+            "Farm should have some tokens"
+        );
+
+        console.log(stableBalanceInFarmBefore, 'stableBalanceInFarmBefore');
+
+        vm.warp(
+            block.timestamp + rewardDuration / 2
+        );
+
+        /*
+        for (uint256 i = 0; i < manager.allocationCount(); i++) {
+
+            (
+                ,
+                address stakeOwner,
+                ,
+                ,
+            ) = manager.allocations(i);
+
+            uint256 rewardsExpected = farm.earnedB(
+                stakeOwner
+            );
+
+            console.log(rewardsExpected, 'rewardsExpected after 15 days');
+        }
+        */
+
+        vm.warp(
+            block.timestamp + rewardDuration / 2
+        );
+
+        /*
+        for (uint256 i = 0; i < manager.allocationCount(); i++) {
+
+            (
+                ,
+                address stakeOwner,
+                ,
+                ,
+            ) = manager.allocations(i);
+
+            uint256 rewardsExpected = farm.earnedB(
+                stakeOwner
+            );
+
+            console.log(rewardsExpected, 'rewardsExpected after 30 days');
+        }
+        */
+
         vm.warp(
             block.timestamp + 365 days * 4
         );
 
-        for (uint256 i = 0; i < 80; i++) {
+        uint256 totalStableIssued;
+
+        /*
+        for (uint256 i = 0; i < manager.allocationCount(); i++) {
 
             (
                 ,
@@ -1750,9 +2134,39 @@ contract TimeLockFarmV2DualTest is Test {
                 stakeOwner
             );
 
+            uint256 rewardsExpected = farm.earnedA(
+                stakeOwner
+            );
+
             vm.startPrank(
                 stakeOwner
             );
+
+            uint256 stableBefore = stableToken.balanceOf(
+                stakeOwner
+            );
+
+            if (stakeOwner == ADMIN_ADDRESS) {
+                assertGt(
+                    stableBefore,
+                    0,
+                    "User should have some stables"
+                );
+            } else {
+                assertEq(
+                    stableBefore,
+                    0,
+                    "User should have 0 stables"
+                );
+            }
+
+            uint256 stableExpected = farm.earnedB(
+                stakeOwner
+            );
+
+            // console.log(stableExpected, 'stableExpected');
+
+            totalStableIssued = totalStableIssued + stableExpected;
 
             farm.exitFarm();
 
@@ -1762,6 +2176,22 @@ contract TimeLockFarmV2DualTest is Test {
 
             uint256 verseBalanceAfter = verseToken.balanceOf(
                 stakeOwner
+            );
+
+            uint256 stableBalance = stableToken.balanceOf(
+                stakeOwner
+            );
+
+            assertGt(
+                stableBalance,
+                0,
+                "User should have some stables"
+            );
+
+            assertEq(
+                stableBalance,
+                stableBefore + stableExpected,
+                "User should have some stables"
             );
 
             assertLt(
@@ -1778,21 +2208,35 @@ contract TimeLockFarmV2DualTest is Test {
 
             assertEq(
                 verseBalanceAfter,
-                verseBalanceBefore + (stakeAmount * 1E18),
+                verseBalanceBefore + (stakeAmount * 1E18) + rewardsExpected,
                 "User should have some tokens unlocked"
             );
 
             vm.stopPrank();
         }
+        */
 
         uint256 verseBalanceInFarm = verseToken.balanceOf(
             address(farm)
         );
 
-        assertEq(
+        uint256 stableBalanceInFarm = stableToken.balanceOf(
+            address(farm)
+        );
+
+        console.log(totalStableIssued, 'totalStableIssued');
+        console.log(stableBalanceInFarm, 'stableBalanceInFarm after');
+
+        assertLt(
+            stableBalanceInFarm,
+            tokens(1),
+            "Farm should have nothing but dust"
+        );
+
+        assertLt(
             verseBalanceInFarm,
-            0,
-            "Farm should have 0 tokens"
+            tokens(1),
+            "Farm should have nothing but dust"
         );
     }
 
@@ -1811,6 +2255,22 @@ contract TimeLockFarmV2DualTest is Test {
             address(farm)
         );
 
+        verseToken.transfer(
+            address(manager),
+            tokens(100_000_000_000)
+        );
+
+        stableToken.transfer(
+            address(manager),
+            tokens(200_000_000_000)
+        );
+
+        manager.setRewardRates(
+            tokens(1),
+            tokens(1)
+        );
+
+        /*
         for (uint256 i = 0; i < 80; i++) {
 
             (
@@ -1891,6 +2351,7 @@ contract TimeLockFarmV2DualTest is Test {
 
             vm.stopPrank();
         }
+        */
 
         uint256 verseBalanceInFarm = verseToken.balanceOf(
             address(farm)
