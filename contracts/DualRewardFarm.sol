@@ -267,7 +267,8 @@ contract DualRewardFarm is TokenWrapper {
         updateUser()
     {
         require(
-            _totalStaked > _withdrawAmount || block.timestamp > periodFinished,
+            _totalStaked > _withdrawAmount ||
+            block.timestamp > periodFinished,
             "DualRewardFarm: STILL_EARNING"
         );
 
@@ -301,10 +302,10 @@ contract DualRewardFarm is TokenWrapper {
             withdrawAmount
         );
 
-        claimReward();
+        claimRewards();
     }
 
-    function claimReward()
+    function claimRewards()
         public
         updateFarm()
         updateUser()
@@ -324,7 +325,8 @@ contract DualRewardFarm is TokenWrapper {
         );
 
         require(
-            rewardAmountA > 0 || rewardAmountB > 0,
+            rewardAmountA > 0 ||
+            rewardAmountB > 0,
             "DualRewardFarm: NOTHING_TO_CLAIM"
         );
 
