@@ -123,7 +123,9 @@ contract DualRewardFarm is TokenWrapper {
         address _rewardTokenB,
         uint256 _defaultDuration,
         address _ownerAddress,
-        address _managerAddress
+        address _managerAddress,
+        string calldata _name,
+        string calldata _symbol
     )
         external
     {
@@ -138,6 +140,9 @@ contract DualRewardFarm is TokenWrapper {
         );
 
         rewardDuration = _defaultDuration;
+
+        name = _name;
+        symbol = _symbol;
 
         stakeToken = IERC20(
             _stakeToken
