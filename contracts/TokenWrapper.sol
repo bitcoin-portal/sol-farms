@@ -7,8 +7,8 @@ import "./Babylonian.sol";
 
 contract TokenWrapper is SafeERC20 {
 
-    string public constant name = "VerseFarm";
-    string public constant symbol = "VFARM";
+    string public name;
+    string public symbol;
 
     uint8 public constant decimals = 18;
 

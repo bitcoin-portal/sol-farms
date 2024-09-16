@@ -104,7 +104,9 @@ contract SimpleFarm is TokenWrapper {
         address _rewardToken,
         uint256 _defaultDuration,
         address _ownerAddress,
-        address _managerAddress
+        address _managerAddress,
+        string calldata _name,
+        string calldata _symbol
     )
         external
     {
@@ -113,13 +115,26 @@ contract SimpleFarm is TokenWrapper {
             "SimpleFarm: INVALID_DURATION"
         );
 
-        stakeToken = IERC20(_stakeToken);
-        rewardToken = IERC20(_rewardToken);
+        require(
+            rewardDuration == 0,
+            "SimpleFarm: ALREADY_INITIALIZED"
+        );
+
+        rewardDuration = _defaultDuration;
+
+        name = _name;
+        symbol = _symbol;
+
+        stakeToken = IERC20(
+            _stakeToken
+        );
+
+        rewardToken = IERC20(
+            _rewardToken
+        );
 
         ownerAddress = _ownerAddress;
         managerAddress = _managerAddress;
-
-        rewardDuration = _defaultDuration;
     }
 
     /**
