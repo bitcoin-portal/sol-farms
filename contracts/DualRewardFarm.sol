@@ -136,7 +136,7 @@ contract DualRewardFarm is TokenWrapper {
 
         require(
             rewardDuration == 0,
-            "SimpleFarm: ALREADY_INITIALIZED"
+            "DualRewardFarm: ALREADY_INITIALIZED"
         );
 
         rewardDuration = _defaultDuration;
