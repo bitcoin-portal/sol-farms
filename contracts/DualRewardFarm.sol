@@ -132,6 +132,13 @@ contract DualRewardFarm is TokenWrapper {
             "DualRewardFarm: INVALID_DURATION"
         );
 
+        require(
+            rewardDuration == 0,
+            "SimpleFarm: ALREADY_INITIALIZED"
+        );
+
+        rewardDuration = _defaultDuration;
+
         stakeToken = IERC20(
             _stakeToken
         );
@@ -146,8 +153,6 @@ contract DualRewardFarm is TokenWrapper {
 
         ownerAddress = _ownerAddress;
         managerAddress = _managerAddress;
-
-        rewardDuration = _defaultDuration;
     }
 
     function lastTimeRewardApplicable()
