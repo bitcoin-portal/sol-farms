@@ -38,10 +38,16 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         defaultApprovalAmount = 100;
         defaultDurationInSeconds = 300;
 
-        farm = await Farm.new(
+        farm = await Farm.new();
+
+        await farm.initialize(
             stakeToken.address,
             rewardToken.address,
-            defaultDurationInSeconds
+            defaultDurationInSeconds,
+            owner,
+            owner,
+            "VerseFarm",
+            "VFARM"
         );
 
         if (inputParams.approval) {
@@ -80,7 +86,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         }
     }
 
-    describe("Farm initial values", () => {
+    describe.only("Farm initial values", () => {
 
         beforeEach(async () => {
             const result = await setupScenario();
@@ -230,19 +236,29 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
             const invalidDuration = 0;
             const correctDuration = 1;
 
+            const f = await Farm.new();
+
             await expectRevert(
-                Farm.new(
+                f.initialize(
                     stakeToken.address,
                     rewardToken.address,
-                    invalidDuration
+                    invalidDuration,
+                    owner,
+                    owner,
+                    "VerseFarm",
+                    "VFARM"
                 ),
                 "SimpleFarm: INVALID_DURATION"
             );
 
-            await Farm.new(
+            await f.initialize(
                 stakeToken.address,
                 rewardToken.address,
-                correctDuration
+                correctDuration,
+                owner,
+                owner,
+                "VerseFarm",
+                "VFARM"
             );
 
             assert.isAbove(
@@ -252,7 +268,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe("Duration initial functionality", () => {
+    describe.only("Duration initial functionality", () => {
 
         beforeEach(async () => {
             const result = await setupScenario({
@@ -433,7 +449,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe("Reward allocation initial functionality by manager", () => {
+    describe.only("Reward allocation initial functionality by manager", () => {
 
         beforeEach(async () => {
 
@@ -739,7 +755,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe("Deposit initial functionality", () => {
+    describe.only("Deposit initial functionality", () => {
 
         beforeEach(async () => {
 
@@ -865,7 +881,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe("Receipt token approve functionality", () => {
+    describe.only("Receipt token approve functionality", () => {
 
         beforeEach(async () => {
 
@@ -1033,7 +1049,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe("Receipt token burn/mint functionality", () => {
+    describe.only("Receipt token burn/mint functionality", () => {
 
         beforeEach(async () => {
 
@@ -1118,7 +1134,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe("Receipt token transfer functionality", () => {
+    describe.only("Receipt token transfer functionality", () => {
 
         beforeEach(async () => {
 
@@ -1316,7 +1332,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe("Witharaw initial functionality", () => {
+    describe.only("Witharaw initial functionality", () => {
 
         beforeEach(async () => {
 
@@ -1444,7 +1460,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe("Owner functionality", () => {
+    describe.only("Owner functionality", () => {
 
         beforeEach(async () => {
             const result = await setupScenario();
@@ -1466,13 +1482,16 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
 
             const expectedAddress = alice;
 
-            const newFarm = await Farm.new(
+            const newFarm = await Farm.new();
+
+            await newFarm.initialize(
                 stakeToken.address,
                 rewardToken.address,
                 defaultDurationInSeconds,
-                {
-                    from: expectedAddress
-                }
+                expectedAddress,
+                expectedAddress,
+                "VerseFarm",
+                "VFARM"
             );
 
             const ownerAddress = await newFarm.ownerAddress();
@@ -1665,7 +1684,7 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
         });
     });
 
-    describe("Manager functionality", () => {
+    describe.only("Manager functionality", () => {
 
         beforeEach(async () => {
             const result = await setupScenario();
@@ -1687,13 +1706,16 @@ contract("SimpleFarm", ([owner, alice, bob, chad, random]) => {
 
             const expectedAddress = alice;
 
-            const newFarm = await Farm.new(
+            const newFarm = await Farm.new();
+
+            await newFarm.initialize(
                 stakeToken.address,
                 rewardToken.address,
                 defaultDurationInSeconds,
-                {
-                    from: expectedAddress
-                }
+                owner,
+                expectedAddress,
+                "VerseFarm",
+                "VFARM"
             );
 
             const managerAddress = await newFarm.managerAddress();

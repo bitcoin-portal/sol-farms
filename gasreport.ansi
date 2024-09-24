@@ -1,5 +1,5 @@
-Compiling 13 files with 0.8.25
-Solc 0.8.25 finished in 2.84s
+Compiling 13 files with 0.8.26
+Solc 0.8.26 finished in 2.84s
 Compiler run [32msuccessful![0m
 
 Running 2 tests for contracts/Counter.t.sol:CounterTest

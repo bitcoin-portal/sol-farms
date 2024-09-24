@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: -- BCOM --
 
-pragma solidity =0.8.25;
+pragma solidity =0.8.26;
 
 import "forge-std/Script.sol";
 
@@ -10,7 +10,6 @@ import { FarmFactory } from "../FarmFactory.sol";
 import "../RescueSetup.sol";
 import "../MigrationSetup.sol";
 import "../TimeLockFarmV2Dual.sol";
-
 contract DeployTimeLockFarmV2Dual is Script {
 
     function setUp() public {}
@@ -162,7 +161,7 @@ contract DeployFarmFactory is Script {
         );
 
         address implementation = address (
-            0x545465f965c3Fdfb97Af0328E458ed66514bE286
+            0x3087Fc9cA1DbE935D5E09Aa94Df813239368Aee9
         );
 
         FarmFactory factory = new FarmFactory(

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: -- BCOM --
 
-pragma solidity =0.8.25;
+pragma solidity =0.8.26;
 
 import "./TokenWrapper.sol";
 
@@ -83,7 +83,7 @@ contract DualRewardFarm is TokenWrapper {
         uint256 tokenAmount
     );
 
-    event RewardAdded(
+    event RewardsAdded(
         uint256 rewardRateA,
         uint256 rewardRateB,
         uint256 tokenAmountA,
@@ -160,16 +160,22 @@ contract DualRewardFarm is TokenWrapper {
         managerAddress = _managerAddress;
     }
 
+    /**
+     * @dev Tracks timestamp for when reward was applied last time
+     */
     function lastTimeRewardApplicable()
         public
         view
-        returns (uint256)
+        returns (uint256 res)
     {
-        return block.timestamp < periodFinished
+        res = block.timestamp < periodFinished
             ? block.timestamp
             : periodFinished;
     }
 
+    /**
+     * @dev Relative value on reward for single staked token for token A
+     */
     function rewardPerTokenA()
         public
         view
@@ -190,6 +196,9 @@ contract DualRewardFarm is TokenWrapper {
         return perTokenStoredA + extraFund;
     }
 
+    /**
+     * @dev Relative value on reward for single staked token for token B
+     */
     function rewardPerTokenB()
         public
         view
@@ -210,6 +219,9 @@ contract DualRewardFarm is TokenWrapper {
         return perTokenStoredB + extraFund;
     }
 
+    /**
+     * @dev Reports earned amount of token A by wallet address not yet collected
+     */
     function earnedA(
         address _walletAddress
     )
@@ -226,6 +238,9 @@ contract DualRewardFarm is TokenWrapper {
             + userRewardsA[_walletAddress];
     }
 
+    /**
+     * @dev Reports earned amount of token B by wallet address not yet collected
+     */
     function earnedB(
         address _walletAddress
     )
@@ -242,6 +257,9 @@ contract DualRewardFarm is TokenWrapper {
             + userRewardsB[_walletAddress];
     }
 
+    /**
+     * @dev Performs deposit of staked token into the farm
+     */
     function farmDeposit(
         uint256 _stakeAmount
     )
@@ -372,10 +390,9 @@ contract DualRewardFarm is TokenWrapper {
         external
         onlyOwner
     {
-        require(
-            _newOwner != ZERO_ADDRESS,
-            "DualRewardFarm: WRONG_ADDRESS"
-        );
+        if (_newOwner == ZERO_ADDRESS) {
+            revert("DualRewardFarm: WRONG_ADDRESS");
+        }
 
         proposedOwner = _newOwner;
 
@@ -465,7 +482,7 @@ contract DualRewardFarm is TokenWrapper {
         );
     }
 
-    function setRewardRate(
+    function setRewardRates(
         uint256 _newRewardRateA,
         uint256 _newRewardRateB
     )
@@ -479,8 +496,13 @@ contract DualRewardFarm is TokenWrapper {
         );
 
         require(
-            _newRewardRateA > 0 && _newRewardRateB > 0,
-            "DualRewardFarm: INVALID_RATE"
+            _newRewardRateA > 0,
+            "DualRewardFarm: INVALID_RATE_A"
+        );
+
+        require(
+            _newRewardRateB > 0,
+            "DualRewardFarm: INVALID_RATE_B"
         );
 
         uint256 currentPeriodFinish = periodFinished;
@@ -489,17 +511,25 @@ contract DualRewardFarm is TokenWrapper {
         periodFinished = block.timestamp + rewardDuration;
 
         if (block.timestamp < currentPeriodFinish) {
+
             require(
-                _newRewardRateA >= rewardRateA &&
+                _newRewardRateA >= rewardRateA,
+                "DualRewardFarm: RATE_A_CANT_DECREASE"
+            );
+
+            require(
                 _newRewardRateB >= rewardRateB,
-                "DualRewardFarm: RATE_CANT_DECREASE"
+                "DualRewardFarm: RATE_B_CANT_DECREASE"
             );
 
             uint256 remainingTime = currentPeriodFinish
                 - block.timestamp;
 
-            uint256 rewardRemainsA = remainingTime * rewardRateA;
-            uint256 rewardRemainsB = remainingTime * rewardRateB;
+            uint256 rewardRemainsA = remainingTime
+                * rewardRateA;
+
+            uint256 rewardRemainsB = remainingTime
+                * rewardRateB;
 
             safeTransfer(
                 rewardTokenA,
@@ -517,11 +547,31 @@ contract DualRewardFarm is TokenWrapper {
         rewardRateA = _newRewardRateA;
         rewardRateB = _newRewardRateB;
 
-        emit RewardAdded(
+        uint256 newRewardAmountA = rewardDuration
+            * _newRewardRateA;
+
+        uint256 newRewardAmountB = rewardDuration
+            * _newRewardRateB;
+
+        safeTransferFrom(
+            rewardTokenA,
+            managerAddress,
+            address(this),
+            newRewardAmountA
+        );
+
+        safeTransferFrom(
+            rewardTokenB,
+            managerAddress,
+            address(this),
+            newRewardAmountB
+        );
+
+        emit RewardsAdded(
             rewardRateA,
             rewardRateB,
-            _newRewardRateA,
-            _newRewardRateB
+            newRewardAmountA,
+            newRewardAmountB
         );
     }
 
