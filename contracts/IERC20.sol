@@ -8,8 +8,8 @@ interface IERC20 {
      * @dev Interface fo transfer function
      */
     function transfer(
-        address recipient,
-        uint256 amount
+        address _recipient,
+        uint256 _amount
     )
         external
         returns (bool);
@@ -18,9 +18,9 @@ interface IERC20 {
      * @dev Interface for transferFrom function
      */
     function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
+        address _sender,
+        address _recipient,
+        uint256 _amount
     )
         external
         returns (bool);
@@ -29,22 +29,22 @@ interface IERC20 {
      * @dev Interface for approve function
      */
     function approve(
-        address spender,
-        uint256 amount
+        address _spender,
+        uint256 _amount
     )
         external
         returns (bool);
 
     function balanceOf(
-        address account
+        address _account
     )
         external
         view
         returns (uint256);
 
-        function mint(
-            address _user,
-            uint256 _amount
-        )
-            external;
+    function mint(
+        address _user,
+        uint256 _amount
+    )
+        external;
 }
