@@ -5,6 +5,7 @@ pragma solidity =0.8.26;
 import "forge-std/Script.sol";
 
 import "../SimpleFarm.sol";
+import "../DynamicRewardFarm.sol";
 import { FarmFactory } from "../FarmFactory.sol";
 
 import "../RescueSetup.sol";
@@ -128,6 +129,45 @@ contract DeploySimpleFarm is Script {
         );
 
         SimpleFarm farm = new SimpleFarm();
+
+        /*
+        farm.initialize(
+            WZANO_USDT_LP,
+            WZANO_TOKEN,
+            DEFAULT_DURATION,
+            OWNER,
+            OWNER,
+            "WZANO_USDT_LP",
+            "WZANO_USDT_LP"
+        );
+        */
+
+        console.log(
+            address(farm),
+            "farm"
+        );
+
+        vm.stopBroadcast();
+    }
+}
+
+contract DeployDynamicFarm is Script {
+
+    function setUp() public {}
+
+    function run() public {
+
+        // uint256 DEFAULT_DURATION = 2592000;
+        // address WZANO_USDT_LP = 0x294fff8FbfE37dA6FFD410b4cA370b92AE853a9B;
+        // address VERSE_TOKEN = 0x249cA82617eC3DfB2589c4c17ab7EC9765350a18;
+        // address WZANO_TOKEN = 0xdb85f6685950E285b1E611037BEBe5B34e2B7d78;
+        // address OWNER = 0x641AD78BAca220C5BD28b51Ce8e0F495e85Fe689;
+
+        vm.startBroadcast(
+            vm.envUint("PRIVATE_KEY")
+        );
+
+        DynamicRewardFarm farm = new DynamicRewardFarm();
 
         /*
         farm.initialize(
