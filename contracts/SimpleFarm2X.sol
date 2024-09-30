@@ -87,16 +87,6 @@ contract SimpleFarm2X is TokenWrapper {
         _;
     }
 
-    event Staked(
-        address indexed user,
-        uint256 tokenAmount
-    );
-
-    event Withdrawn(
-        address indexed user,
-        uint256 tokenAmount
-    );
-
     event RewardAdded(
         uint256 rewardRateA,
         uint256 rewardRateB,
@@ -108,27 +98,6 @@ contract SimpleFarm2X is TokenWrapper {
         address indexed user,
         uint256 tokenAmountA,
         uint256 tokenAmountB
-    );
-
-    event Recovered(
-        IERC20 indexed token,
-        uint256 tokenAmount
-    );
-
-    event RewardsDurationUpdated(
-        uint256 newRewardDuration
-    );
-
-    event OwnerProposed(
-        address proposedOwner
-    );
-
-    event OwnerChanged(
-        address newOwner
-    );
-
-    event ManagerChanged(
-        address newManager
     );
 
     constructor(

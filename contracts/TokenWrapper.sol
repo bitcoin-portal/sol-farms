@@ -3,7 +3,6 @@
 pragma solidity =0.8.26;
 
 import "./SafeERC20.sol";
-import "./Babylonian.sol";
 
 contract TokenWrapper is SafeERC20 {
 
@@ -29,6 +28,49 @@ contract TokenWrapper is SafeERC20 {
         address indexed owner,
         address indexed spender,
         uint256 value
+    );
+
+    event Staked(
+        address indexed user,
+        uint256 tokenAmount
+    );
+
+    event Withdrawn(
+        address indexed user,
+        uint256 tokenAmount
+    );
+
+    event RewardAdded(
+        address indexed rewardToken,
+        uint256 rewardRate,
+        uint256 tokenAmount
+    );
+
+    event RewardPaid(
+        address indexed user,
+        address indexed rewardToken,
+        uint256 tokenAmount
+    );
+
+    event Recovered(
+        IERC20 indexed token,
+        uint256 tokenAmount
+    );
+
+    event RewardsDurationUpdated(
+        uint256 newRewardDuration
+    );
+
+    event OwnerProposed(
+        address proposedOwner
+    );
+
+    event OwnerChanged(
+        address newOwner
+    );
+
+    event ManagerChanged(
+        address newManager
     );
 
     /**

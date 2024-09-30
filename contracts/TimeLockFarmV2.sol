@@ -65,16 +65,6 @@ contract TimeLockFarmV2 is TokenWrapper {
         _;
     }
 
-    event Staked(
-        address indexed user,
-        uint256 tokenAmount
-    );
-
-    event Withdrawn(
-        address indexed user,
-        uint256 tokenAmount
-    );
-
     event RewardAdded(
         uint256 rewardRate,
         uint256 tokenAmount
@@ -83,19 +73,6 @@ contract TimeLockFarmV2 is TokenWrapper {
     event RewardPaid(
         address indexed user,
         uint256 tokenAmount
-    );
-
-    event Recovered(
-        IERC20 indexed token,
-        uint256 tokenAmount
-    );
-
-    event RewardsDurationUpdated(
-        uint256 newRewardDuration
-    );
-
-    event ManagerChanged(
-        address newManager
     );
 
     constructor(
