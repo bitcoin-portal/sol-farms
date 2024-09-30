@@ -71,6 +71,10 @@ contract DynamicRewardFarm is TokenWrapper {
         _;
     }
 
+    /**
+     * @dev This is desired because this contract is
+     * cloned by the factory contract calling initialize
+     */
     function initialize(
         address _stakeToken,
         uint256 _defaultDuration,
