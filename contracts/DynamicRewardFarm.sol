@@ -72,7 +72,7 @@ contract DynamicRewardFarm is TokenWrapper {
     }
 
     /**
-     * @dev This is desired because this contract is
+     * @dev No modifier necessary since this contract is
      * cloned by the factory contract calling initialize
      */
     function initialize(
@@ -84,6 +84,7 @@ contract DynamicRewardFarm is TokenWrapper {
         string calldata _symbol
     )
         external
+        // onlyFactory
     {
         require(
             _defaultDuration > 0,
