@@ -41,18 +41,12 @@ contract DynamicRewardFarm is TokenWrapper {
     mapping(address => RewardData) public rewards;
 
     modifier onlyOwner() {
-        require(
-            msg.sender == ownerAddress,
-            "DynamicRewardFarm: INVALID_OWNER"
-        );
+        _onlyOwner();
         _;
     }
 
     modifier onlyManager() {
-        require(
-            msg.sender == managerAddress,
-            "DynamicRewardFarm: INVALID_MANAGER"
-        );
+        _onlyManager();
         _;
     }
 
@@ -199,10 +193,6 @@ contract DynamicRewardFarm is TokenWrapper {
         view
         returns (uint256)
     {
-        if (_totalStaked == 0) {
-            return rewards[_rewardToken].perTokenStored;
-        }
-
         RewardData storage r = rewards[
             _rewardToken
         ];
@@ -385,7 +375,7 @@ contract DynamicRewardFarm is TokenWrapper {
         onlyOwner
     {
         if (_newOwner == ZERO_ADDRESS) {
-            revert("DynamicRewardFarm: WRONG_ADDRESS");
+            revert InvalidAddress();
         }
 
         proposedOwner = _newOwner;
@@ -417,7 +407,7 @@ contract DynamicRewardFarm is TokenWrapper {
         onlyOwner
     {
         if (_newManager == ZERO_ADDRESS) {
-            revert("DynamicRewardFarm: ZERO_ADDRESS");
+            revert InvalidAddress();
         }
 
         managerAddress = _newManager;
@@ -455,6 +445,7 @@ contract DynamicRewardFarm is TokenWrapper {
                     "DynamicRewardFarm: NOT_ENOUGH_REWARDS"
                 );
 
+                _updateFarm();
                 _updateUser(DEAD_ADDRESS);
 
                 rewards[_tokenAddress].userRewards[DEAD_ADDRESS] =
@@ -710,5 +701,25 @@ contract DynamicRewardFarm is TokenWrapper {
 
             r.perTokenPaid[_user] = r.perTokenStored;
         }
+    }
+
+    function _onlyOwner()
+        private
+        view
+    {
+        require(
+            msg.sender == ownerAddress,
+            "DynamicRewardFarm: INVALID_OWNER"
+        );
+    }
+
+    function _onlyManager()
+        private
+        view
+    {
+        require(
+            msg.sender == managerAddress,
+            "DynamicRewardFarm: INVALID_MANAGER"
+        );
     }
 }
