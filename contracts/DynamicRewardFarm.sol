@@ -65,6 +65,11 @@ contract DynamicRewardFarm is TokenWrapper {
         _;
     }
 
+    event RewardTokenAdded(
+        address indexed rewardToken,
+        uint256 tokenCount
+    );
+
     /**
      * @dev No modifier necessary since this contract is
      * cloned by the factory contract calling initialize
@@ -131,6 +136,11 @@ contract DynamicRewardFarm is TokenWrapper {
         );
 
         tokenCount = tokenCount + 1;
+
+        emit RewardTokenAdded(
+            _rewardToken,
+            tokenCount
+        );
     }
 
     /**
