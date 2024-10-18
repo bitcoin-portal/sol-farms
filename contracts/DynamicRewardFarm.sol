@@ -601,6 +601,12 @@ contract DynamicRewardFarm is TokenWrapper {
         );
 
         for (uint256 i; i < _rewardTokens.length; i++) {
+
+            require(
+                _rewardTokens[i] == rewardTokens[i],
+                "DynamicRewardFarm: INVALID_TOKEN_ORDER"
+            );
+
             _setRewardRate(
                 _rewardTokens[i],
                 _newRewardRates[i]
