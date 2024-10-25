@@ -1,0 +1,25 @@
+[profile.default]
+src = "contracts"
+out = "out"
+libs = ["node_modules","lib"]
+test = "contracts/tests"
+cache_path = "forge-cache"
+solc = "0.8.26"
+optimizer = true
+optimizer_runs = 9999999
+evm_version ="cancun"
+# gas limit in tests
+# gas_limit = 30000000
+[invariant]
+fail_on_revert = true
+eth-rpc-url = "https://eth.llamarpc.com"
+[rpc_endpoints]
+goerli = "https://goerli.infura.io/v3/63a593656f46456ab99b5d50f212f236"
+mainnet = "https://mainnet.infura.io/v3/63a593656f46456ab99b5d50f212f236"
+polygon = "https://polygon-mainnet.infura.io/v3/63a593656f46456ab99b5d50f212f236"
+[etherscan]
+mainnet = { key = "${ETHERSCAN_MAINNET_KEY}" }
+polygon = { key = "${POLYGON_MAINNET_KEY}" }
+
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config

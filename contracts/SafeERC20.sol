@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: -- BCOM --
 
-pragma solidity =0.8.19;
+pragma solidity =0.8.26;
 
 import "./IERC20.sol";
+
+error SafeERC20FailedOperation(
+    address token
+);
 
 contract SafeERC20 {
 
@@ -16,7 +20,7 @@ contract SafeERC20 {
     )
         internal
     {
-        callOptionalReturn(
+        _callOptionalReturn(
             _token,
             abi.encodeWithSelector(
                 _token.transfer.selector,
@@ -37,7 +41,7 @@ contract SafeERC20 {
     )
         internal
     {
-        callOptionalReturn(
+        _callOptionalReturn(
             _token,
             abi.encodeWithSelector(
                 _token.transferFrom.selector,
@@ -48,29 +52,50 @@ contract SafeERC20 {
         );
     }
 
-    function callOptionalReturn(
+    function _callOptionalReturn(
         IERC20 _token,
         bytes memory _data
     )
         private
     {
-        (
-            bool success,
-            bytes memory returndata
-        ) = address(_token).call(_data);
+        uint256 returnSize;
+        uint256 returnValue;
 
-        require(
-            success,
-            "SafeERC20: CALL_FAILED"
-        );
+        assembly ("memory-safe") {
 
-        if (returndata.length > 0) {
-            require(
-                abi.decode(
-                    returndata,
-                    (bool)
-                ),
-                "SafeERC20: OPERATION_FAILED"
+            let success := call(
+                gas(),
+                _token,
+                0,
+                add(_data, 0x20),
+                mload(_data),
+                0,
+                0x20
+            )
+
+            // bubble errors
+            if iszero(success) {
+                let ptr := mload(0x40)
+                returndatacopy(
+                    ptr,
+                    0,
+                    returndatasize()
+                )
+                revert(
+                    ptr,
+                    returndatasize()
+                )
+            }
+            returnSize := returndatasize()
+            returnValue := mload(0)
+        }
+
+        if (returnSize == 0
+            ? address(_token).code.length == 0
+            : returnValue != 1
+        ) {
+            revert SafeERC20FailedOperation(
+                address(_token)
             );
         }
     }

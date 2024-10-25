@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: -- BCOM --
 
-pragma solidity =0.8.19;
+pragma solidity =0.8.26;
 
 import "./TokenWrapper.sol";
 
 contract SimpleFarm is TokenWrapper {
 
-    IERC20 public immutable stakeToken;
-    IERC20 public immutable rewardToken;
+    IERC20 public stakeToken;
+    IERC20 public rewardToken;
 
     uint256 public rewardRate;
     uint256 public periodFinished;
@@ -52,21 +52,11 @@ contract SimpleFarm is TokenWrapper {
         _;
     }
 
-    modifier updateSender(address sender) {
-        userRewards[sender] = earned(sender);
-        perTokenPaid[sender] = perTokenStored;
+    modifier updateSender(address _sender) {
+        userRewards[_sender] = earned(_sender);
+        perTokenPaid[_sender] = perTokenStored;
         _;
     }
-
-    event Staked(
-        address indexed user,
-        uint256 tokenAmount
-    );
-
-    event Withdrawn(
-        address indexed user,
-        uint256 tokenAmount
-    );
 
     event RewardAdded(
         uint256 rewardRate,
@@ -78,44 +68,42 @@ contract SimpleFarm is TokenWrapper {
         uint256 tokenAmount
     );
 
-    event Recovered(
-        IERC20 indexed token,
-        uint256 tokenAmount
-    );
-
-    event RewardsDurationUpdated(
-        uint256 newRewardDuration
-    );
-
-    event OwnerProposed(
-        address proposedOwner
-    );
-
-    event OwnerChanged(
-        address newOwner
-    );
-
-    event ManagerChanged(
-        address newManager
-    );
-
-    constructor(
-        IERC20 _stakeToken,
-        IERC20 _rewardToken,
-        uint256 _defaultDuration
-    ) {
+    function initialize(
+        address _stakeToken,
+        address _rewardToken,
+        uint256 _defaultDuration,
+        address _ownerAddress,
+        address _managerAddress,
+        string calldata _name,
+        string calldata _symbol
+    )
+        external
+    {
         require(
             _defaultDuration > 0,
             "SimpleFarm: INVALID_DURATION"
         );
 
-        stakeToken = _stakeToken;
-        rewardToken = _rewardToken;
-
-        ownerAddress = msg.sender;
-        managerAddress = msg.sender;
+        require(
+            rewardDuration == 0,
+            "SimpleFarm: ALREADY_INITIALIZED"
+        );
 
         rewardDuration = _defaultDuration;
+
+        name = _name;
+        symbol = _symbol;
+
+        stakeToken = IERC20(
+            _stakeToken
+        );
+
+        rewardToken = IERC20(
+            _rewardToken
+        );
+
+        ownerAddress = _ownerAddress;
+        managerAddress = _managerAddress;
     }
 
     /**

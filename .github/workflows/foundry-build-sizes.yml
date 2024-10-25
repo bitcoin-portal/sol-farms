@@ -1,0 +1,33 @@
+name: Test sizes
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+
+    name: Foundry project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Install Foundry
+        uses: bitcoin-portal/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run Forge Version
+        run: forge --version
+
+      - name: Run Forge Build
+        run: forge build --sizes

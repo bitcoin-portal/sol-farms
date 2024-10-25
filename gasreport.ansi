@@ -1,0 +1,34 @@
+Compiling 13 files with 0.8.26
+Solc 0.8.26 finished in 2.84s
+Compiler run [32msuccessful![0m
+
+Running 2 tests for contracts/Counter.t.sol:CounterTest
+[32m[PASS][0m testIncrement() (gas: 30943)
+[32m[PASS][0m testSetNumber(uint256) (runs: 256, μ: 27841, ~: 28463)
+Test result: [32mok[0m. [32m2[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 19.51ms
+
+Running 1 test for contracts/PrivateFarm2X.t.sol:PrivateFarmTest
+[32m[PASS][0m testChangeDuration() (gas: 20166)
+Test result: [32mok[0m. [32m1[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 1.97s
+| contracts/Counter.sol:Counter contract |                 |       |        |       |         |
+|----------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                        | Deployment Size |       |        |       |         |
+| 65915                                  | 358             |       |        |       |         |
+| Function Name                          | min             | avg   | median | max   | # calls |
+| increment                              | 24715           | 24715 | 24715  | 24715 | 1       |
+| number                                 | 303             | 303   | 303    | 303   | 2       |
+| setNumber                              | 2409            | 9042  | 2409   | 22309 | 3       |
+
+
+| contracts/PrivateFarm2X.sol:PrivateFarm2X contract |                 |      |        |      |         |
+|----------------------------------------------------|-----------------|------|--------|------|---------|
+| Deployment Cost                                    | Deployment Size |      |        |      |         |
+| 1649928                                            | 8444            |      |        |      |         |
+| Function Name                                      | min             | avg  | median | max  | # calls |
+| rewardDuration                                     | 1262            | 2262 | 2262   | 3262 | 2       |
+| setRewardDuration                                  | 9231            | 9231 | 9231   | 9231 | 1       |
+
+
+
+ 
+Ran 2 test suites: [32m3[0m tests passed, [31m0[0m failed, [33m0[0m skipped (3 total tests)
