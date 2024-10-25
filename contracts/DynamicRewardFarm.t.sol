@@ -1003,7 +1003,7 @@ contract DynamicRewardFarmTest is Test {
         rewardTokenA.approve(address(farm), type(uint256).max);
         rewardTokenB.approve(address(farm), type(uint256).max);
 
-        vm.expectRevert(UnknownToken.selector);
+        vm.expectRevert("DynamicRewardFarm: INVALID_TOKEN_ORDER");
 
         farm.setRewardRates(
             rewardTokens,
