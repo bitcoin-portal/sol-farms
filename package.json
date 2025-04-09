@@ -25,15 +25,19 @@
 		"foundry-test-migration": "forge test --match-contract MigrationSetupTest --gas-report -vv",
 		"foundry-test-migration-live": "forge test --match-contract MigrationSetupLive --gas-report -vv",
 		"foundry-test-reports": "forge test --gas-report > gasreport.ansi -vvv",
+		"verify-contract": "forge verify-contract 0x8EB1B69fB74C6019C16f43ae93F0fAD7CCB9A59d --chain polygon contracts/Scripts/Deployer.s.sol:DeployRescue --watch",
 		"deploy-test-token": "forge script contracts/Scripts/Deployer.s.sol:DeployTestToken --slow --broadcast --verify --rpc-url polygon --gas-report",
 		"deploy-migration": "forge script contracts/Scripts/Deployer.s.sol:DeployMigration --with-gas-price 130000000000 --slow --broadcast --verify --rpc-url polygon",
 		"deploy-timelock-farmv2": "forge script contracts/Scripts/Deployer.s.sol:DeployTimeLockFarmV2Dual --with-gas-price 130000000000 --slow --broadcast --verify --rpc-url polygon",
-		"verify-contract": "forge verify-contract 0x8EB1B69fB74C6019C16f43ae93F0fAD7CCB9A59d --chain polygon contracts/Scripts/Deployer.s.sol:DeployRescue --watch",
 		"deploy-rescue": "forge script contracts/Scripts/Deployer.s.sol:DeployRescue --with-gas-price 40000000000 --slow --broadcast --verify --rpc-url polygon",
 		"deploy-manager": "forge script contracts/Scripts/Deployer.s.sol:DeployManager --with-gas-price 130000000000 --slow --broadcast --verify --rpc-url polygon",
 		"deploy-simple-farm": "forge script contracts/Scripts/Deployer.s.sol:DeploySimpleFarm --broadcast --legacy --verify --rpc-url mainnet",
-		"deploy-dynamic-farm": "forge script contracts/Scripts/Deployer.s.sol:DeployDynamicFarm --broadcast --legacy --verify --rpc-url mainnet",
-		"deploy-farm-factory": "forge script contracts/Scripts/Deployer.s.sol:DeployFarmFactory --slow --broadcast --legacy --verify --rpc-url mainnet"
+		"deploy-dynamic-farm": "forge script contracts/Scripts/Deployer.s.sol:DeployDynamicFarm --broadcast --legacy --verify --rpc-url polygon",
+		"deploy-farm-factory": "forge script contracts/Scripts/Deployer.s.sol:DeployFarmFactory --slow --broadcast --legacy --verify --rpc-url mainnet",
+		"deploy-distributor": "forge script contracts/Scripts/Deployer.s.sol:DeployDistributor --with-gas-price 130000000000 --slow --broadcast --legacy --verify --rpc-url polygon",
+		"deploy-distributor-with-quest-id": "forge script contracts/Scripts/Deployer.s.sol:DeployDistributorWithQuestId --with-gas-price 330000000000 --slow --broadcast --legacy --verify --rpc-url polygon",
+		"deploy-distributor-with-gas": "forge script contracts/Scripts/Deployer.s.sol:DeployDistributorWithGas --with-gas-price 130000000000 --slow --broadcast --legacy --verify --rpc-url polygon",
+		"execute-distributor": "forge script contracts/Scripts/Deployer.s.sol:ExecuteDistributor --with-gas-price 130000000000 --slow --broadcast --verify --rpc-url polygon"
 	},
 	"repository": {
 		"type": "git",
