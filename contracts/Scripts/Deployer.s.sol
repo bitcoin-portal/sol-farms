@@ -10,7 +10,11 @@ import { FarmFactory } from "../FarmFactory.sol";
 
 import "../RescueSetup.sol";
 import "../MigrationSetup.sol";
+import "../TokenDistributor.sol";
+import "../TokenDistributorWithGas.sol";
+import "../TokenDistributorWithQuestId.sol";
 import "../TimeLockFarmV2Dual.sol";
+
 contract DeployTimeLockFarmV2Dual is Script {
 
     function setUp() public {}
@@ -82,6 +86,69 @@ contract DeployMigration is Script {
         console.log(
             address(migration),
             "migration"
+        );
+
+        vm.stopBroadcast();
+    }
+}
+
+contract DeployDistributor is Script {
+
+    function setUp() public {}
+
+    function run() public {
+
+        vm.startBroadcast(
+            vm.envUint("PRIVATE_KEY")
+        );
+
+        TokenDistributor distributor = new TokenDistributor();
+
+        console.log(
+            address(distributor),
+            "distributor"
+        );
+
+        vm.stopBroadcast();
+    }
+}
+
+contract DeployDistributorWithQuestId is Script {
+
+    function setUp() public {}
+
+    function run() public {
+
+        vm.startBroadcast(
+            vm.envUint("PRIVATE_KEY")
+        );
+
+        TokenDistributorWithQuestId distributor = new TokenDistributorWithQuestId();
+
+        console.log(
+            address(distributor),
+            "distributor"
+        );
+
+        vm.stopBroadcast();
+    }
+}
+
+contract DeployDistributorWithGas is Script {
+
+    function setUp() public {}
+
+    function run() public {
+
+        vm.startBroadcast(
+            vm.envUint("PRIVATE_KEY")
+        );
+
+        TokenDistributorWithGas distributor = new TokenDistributorWithGas();
+
+        console.log(
+            address(distributor),
+            "distributor with gas"
         );
 
         vm.stopBroadcast();
