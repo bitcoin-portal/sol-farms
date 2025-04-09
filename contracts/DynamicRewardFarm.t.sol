@@ -389,7 +389,7 @@ contract DynamicRewardFarmTest is Test {
     function testOnlyOwnerFunctions()
         public
     {
-        // User1 tries to add reward token
+        // User1 tries to add reward token (only owner can do this)
         vm.prank(user1);
 
         vm.expectRevert(
@@ -408,11 +408,23 @@ contract DynamicRewardFarmTest is Test {
             expectedTokens,
             "Reward tokens should be 2"
         );
-
-        // User1 tries to set reward duration
+    }
+    
+    function testOnlyManagerFunctions()
+        public
+    {
+        // User1 tries to set reward rates (only manager can do this)
         vm.prank(user1);
+        
+        // Create parameters for setRewardRates
+        address[] memory rewardTokens = farm.getRewardTokens();
+        uint256[] memory rewardRates = new uint256[](rewardTokens.length);
+        for (uint256 i = 0; i < rewardRates.length; i++) {
+            rewardRates[i] = defaultRewardRate * 2;
+        }
+        
         vm.expectRevert("DynamicRewardFarm: INVALID_MANAGER");
-        farm.setRewardDuration(60 days);
+        farm.setRewardRates(rewardTokens, rewardRates);
     }
 
     function testOnlyOwnerCanAddRewardToken()
@@ -577,11 +589,12 @@ contract DynamicRewardFarmTest is Test {
     {
         vm.startPrank(owner);
 
-        // We have already added tokens A and B in setUp(), so we can add 8 more tokens (C to J)
-        TestToken[] memory newTokens = new TestToken[](8);
-
-        // Since 2 already exist, we can add 8 more
-        uint256 remainingTokens = 8;
+        // We have already added tokens A and B in setUp(), so we can add more tokens up to the MAX_TOKENS limit
+        // MAX_TOKENS is defined as 20 in the contract
+        
+        // We need to add 18 more tokens (since 2 already exist) to reach the limit
+        uint256 remainingTokens = 18;
+        TestToken[] memory newTokens = new TestToken[](remainingTokens);
 
         for (uint256 i = 0; i < remainingTokens; i++) {
             newTokens[i] = new TestToken();
@@ -589,20 +602,20 @@ contract DynamicRewardFarmTest is Test {
             farm.addRewardToken(address(newTokens[i]));
         }
 
-        // Now the total reward tokens should be 10
+        // Now the total reward tokens should be 20 (MAX_TOKENS)
 
-        // Try to add one more token (K), which should revert
-        TestToken tokenK = new TestToken();
-        tokenK.mintByMaster(1e27, owner); // Mint tokens to owner
+        // Try to add one more token (exceeds MAX_TOKENS), which should revert
+        TestToken tokenExceed = new TestToken();
+        tokenExceed.mintByMaster(1e27, owner); // Mint tokens to owner
 
         vm.expectRevert("DynamicRewardFarm: MAX_TOKENS_REACHED");
-        farm.addRewardToken(address(tokenK));
+        farm.addRewardToken(address(tokenExceed));
 
         vm.stopPrank();
 
-        // Verify that the number of reward tokens is indeed 10
+        // Verify that the number of reward tokens is indeed 20 (MAX_TOKENS)
         address[] memory rewardTokens = farm.getRewardTokens();
-        assertEq(rewardTokens.length, 10, "Reward tokens should be 10");
+        assertEq(rewardTokens.length, 20, "Reward tokens should be 20 (MAX_TOKENS)");
     }
 
     function testAddRewardTokenDuplicate()
@@ -662,14 +675,8 @@ contract DynamicRewardFarmTest is Test {
         farm.proposeNewOwner(user2);
     }
 
-    function testInvalidManager()
-        public
-    {
-        // User1 tries to set reward duration
-        vm.prank(user1);
-        vm.expectRevert("DynamicRewardFarm: INVALID_MANAGER");
-        farm.setRewardDuration(60 days);
-    }
+    // This test is now covered by testOnlyManagerFunctions
+    // Removing to avoid duplication
 
     // test invalid duration
     function testInvalidDuration()

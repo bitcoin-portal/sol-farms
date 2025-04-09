@@ -17,7 +17,7 @@ contract DynamicRewardFarm is TokenWrapper {
     uint256 public rewardDuration;
     uint256 public lastUpdateTime;
 
-    uint256 constant MAX_TOKENS = 10;
+    uint256 constant MAX_TOKENS = 20;
     uint256 constant PRECISIONS = 1E18;
 
     address public ownerAddress;
@@ -481,7 +481,7 @@ contract DynamicRewardFarm is TokenWrapper {
         uint256 _rewardDuration
     )
         external
-        onlyManager
+        onlyOwner
     {
         require(
             _rewardDuration > 0,
