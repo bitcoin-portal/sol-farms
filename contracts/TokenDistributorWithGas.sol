@@ -194,6 +194,44 @@ contract TokenDistributorWithGas is SafeERC20 {
 
         for (uint256 i; i < _recipients.length; i++) {
 
+            if (enableCoolDown == false) {
+                safeTransfer(
+                    IERC20(token),
+                    _recipients[i],
+                    _amounts[i]
+                );
+
+                continue;
+            }
+
+            if (lastDistributed[_recipients[i]] + coolDown > block.timestamp) {
+                continue;
+            }
+
+            lastDistributed[_recipients[i]] = block.timestamp;
+
+            safeTransfer(
+                IERC20(token),
+                _recipients[i],
+                _amounts[i]
+            );
+        }
+    }
+
+    function sendTokensWithGas(
+        address[] calldata _recipients,
+        uint256[] calldata _amounts
+    )
+        external
+        onlyManager
+    {
+        require(
+            _recipients.length == _amounts.length,
+            "TokenDistributorWithGas: INVALID_INPUT"
+        );
+
+        for (uint256 i; i < _recipients.length; i++) {
+
             // Check recipient's gas balance
             if (_recipients[i].balance < gasThreshold) {
 
