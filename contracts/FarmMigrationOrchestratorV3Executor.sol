@@ -11,6 +11,35 @@ import "forge-std/console2.sol";
  */
 contract FarmMigrationOrchestratorV3Executor is FarmMigrationOrchestratorV3Router {
 
+    // Owner management
+    address public owner;
+    address public proposedOwner;
+
+    modifier onlyOwner() {
+        require(
+            msg.sender == owner,
+            "FarmMigrationOrchestratorV3Router: INVALID_OWNER"
+        );
+        _;
+    }
+
+    event OwnerProposed(
+        address indexed newOwner
+    );
+
+    event OwnerChanged(
+        address indexed newOwner
+    );
+
+    // Events
+    event MigrationCompleted(
+        address indexed user,
+        uint256 verseWithdrawn,
+        uint256 tbtcSwapped,
+        uint256 lpTokensAcquired,
+        uint256 lpTokensStaked
+    );
+
     constructor(
         address _simpleFarmA,
         address _simpleFarmB,
@@ -25,7 +54,9 @@ contract FarmMigrationOrchestratorV3Executor is FarmMigrationOrchestratorV3Route
         _tbtcToken,
         _balancerPool,
         _balancerRouter
-    ) {}
+    ) {
+        owner = msg.sender;
+    }
 
     /**
      * @notice Execute the complete migration process
@@ -41,7 +72,6 @@ contract FarmMigrationOrchestratorV3Executor is FarmMigrationOrchestratorV3Route
         uint256 _deadline
     )
         external
-        override
     {
         // Step 1: Transfer SimpleFarmA receipt tokens from user to orchestrator
         require(
@@ -82,7 +112,7 @@ contract FarmMigrationOrchestratorV3Executor is FarmMigrationOrchestratorV3Route
         console2.log("  tBTC amount:", tbtcReceived);
 
         // Use the working addLiquidity approach
-        uint256 lpTokensReceived = addLiquidity(remainingVerse, tbtcReceived);
+        uint256 lpTokensReceived = _addLiquidity(remainingVerse, tbtcReceived);
 
         console2.log("LP tokens received:", lpTokensReceived);
 
@@ -117,6 +147,78 @@ contract FarmMigrationOrchestratorV3Executor is FarmMigrationOrchestratorV3Route
             tbtcReceived,
             lpTokensReceived,
             lpTokensReceived > 0 ? simpleFarmB.balanceOf(address(this)) : 0
+        );
+    }
+
+    /**
+     * @notice Propose a new owner
+     */
+    function proposeOwner(
+        address _proposedOwner
+    )
+        external
+        onlyOwner
+    {
+        proposedOwner = _proposedOwner;
+
+        emit OwnerProposed(
+            _proposedOwner
+        );
+    }
+
+    /**
+     * @notice Accept ownership
+     */
+    function acceptOwnership()
+        external
+    {
+        require(
+            msg.sender == proposedOwner,
+            "FarmMigrationOrchestratorV3Router: INVALID_PROPOSED_OWNER"
+        );
+
+        owner = msg.sender;
+        proposedOwner = address(0x0);
+
+        emit OwnerChanged(
+            msg.sender
+        );
+    }
+
+    /**
+     * @notice Emergency withdraw function
+     */
+    function emergencyWithdraw(
+        IERC20 _token,
+        uint256 _amount
+    )
+        external
+        onlyOwner
+    {
+        safeTransfer(
+            _token,
+            owner,
+            _amount
+        );
+    }
+
+    /**
+     * @notice Get pool information
+     */
+    function getPoolInfo()
+        external
+        view
+        returns (
+            address[] memory tokens,
+            uint256 totalSupply,
+            uint256 poolBalance
+        )
+    {
+        tokens = balancerPool.getTokens();
+        totalSupply = balancerPool.totalSupply();
+
+        poolBalance = balancerPool.balanceOf(
+            address(this)
         );
     }
 }

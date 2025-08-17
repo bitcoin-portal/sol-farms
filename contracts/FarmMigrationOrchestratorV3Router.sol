@@ -32,27 +32,6 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
     address public constant BALANCER_VAULT = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
     address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
-    // Owner management
-    address public owner;
-    address public proposedOwner;
-
-    // Events
-    event MigrationCompleted(
-        address indexed user,
-        uint256 verseWithdrawn,
-        uint256 tbtcSwapped,
-        uint256 lpTokensAcquired,
-        uint256 lpTokensStaked
-    );
-
-    event OwnerProposed(
-        address indexed newOwner
-    );
-
-    event OwnerChanged(
-        address indexed newOwner
-    );
-
     event LiquidityAdded(
         address indexed user,
         uint256 verseAmountIn,
@@ -60,14 +39,6 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         uint256 lpTokensOut,
         uint256 exactBptAmountOut
     );
-
-    modifier onlyOwner() {
-        require(
-            msg.sender == owner,
-            "FarmMigrationOrchestratorV3Router: INVALID_OWNER"
-        );
-        _;
-    }
 
     constructor(
         address _simpleFarmA,
@@ -104,8 +75,6 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         balancerRouter = IBalancerV3Router(
             _balancerRouter
         );
-
-        owner = msg.sender;
     }
 
     /**
@@ -293,82 +262,10 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
     }
 
     /**
-     * @notice Get pool information
-     */
-    function getPoolInfo()
-        external
-        view
-        returns (
-            address[] memory tokens,
-            uint256 totalSupply,
-            uint256 poolBalance
-        )
-    {
-        tokens = balancerPool.getTokens();
-        totalSupply = balancerPool.totalSupply();
-
-        poolBalance = balancerPool.balanceOf(
-            address(this)
-        );
-    }
-
-    /**
-     * @notice Propose a new owner
-     */
-    function proposeOwner(
-        address _proposedOwner
-    )
-        external
-        onlyOwner
-    {
-        proposedOwner = _proposedOwner;
-
-        emit OwnerProposed(
-            _proposedOwner
-        );
-    }
-
-    /**
-     * @notice Accept ownership
-     */
-    function acceptOwnership()
-        external
-    {
-        require(
-            msg.sender == proposedOwner,
-            "FarmMigrationOrchestratorV3Router: INVALID_PROPOSED_OWNER"
-        );
-
-        owner = msg.sender;
-        proposedOwner = address(0x0);
-
-        emit OwnerChanged(
-            msg.sender
-        );
-    }
-
-    /**
-     * @notice Emergency withdraw function
-     */
-    function emergencyWithdraw(
-        IERC20 _token,
-        uint256 _amount
-    )
-        external
-        onlyOwner
-    {
-        safeTransfer(
-            _token,
-            owner,
-            _amount
-        );
-    }
-
-    /**
      * @notice Internal function for adding liquidity
      * @dev Assumes tokens are already in this contract
      */
-    function addLiquidity(
+    function _addLiquidity(
         uint256 _verseAmount,
         uint256 _tbtcAmount
     )
@@ -713,24 +610,6 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
     }
 
     /**
-     * @notice Get current pool balances
-     */
-    function getPoolBalances() public view returns (uint256 tbtcBalance, uint256 verseBalance) {
-        // Call getCurrentLiveBalances on the pool
-        // This returns [tbtcBalance, verseBalance] as fixed point 18 decimals
-        bytes memory data = abi.encodeWithSignature("getCurrentLiveBalances()");
-        (bool success, bytes memory result) = address(balancerPool).staticcall(data);
-
-        if (success && result.length >= 64) {
-            uint256[] memory balances = abi.decode(result, (uint256[]));
-            if (balances.length >= 2) {
-                tbtcBalance = balances[0];
-                verseBalance = balances[1];
-            }
-        }
-    }
-
-    /**
      * @notice Calculate expected LP tokens for given amounts using Balancer V3 Router query
      * @param _verseAmount Amount of VERSE tokens
      * @param _tbtcAmount Amount of tBTC tokens
@@ -782,28 +661,21 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
     }
 
     /**
-     * @notice Execute the complete migration process - to be overridden by executor
-     * @param _farmReceiptAmount Amount of SimpleFarmA receipt tokens to migrate
-     * @param _verseToSwap Amount of VERSE to swap for tBTC
-     * @param _minTbtcOut Minimum tBTC to receive from swap
-     * @param _deadline Transaction deadline
+     * @notice Get current pool balances
      */
-    function executeMigration(
-        uint256 _farmReceiptAmount,
-        uint256 _verseToSwap,
-        uint256 _minTbtcOut,
-        uint256 _deadline
-    )
-        external
-        virtual
-    {
-        // Suppress unused parameter warnings
-        _farmReceiptAmount;
-        _verseToSwap;
-        _minTbtcOut;
-        _deadline;
+    function getPoolBalances() public view returns (uint256 tbtcBalance, uint256 verseBalance) {
+        // Call getCurrentLiveBalances on the pool
+        // This returns [tbtcBalance, verseBalance] as fixed point 18 decimals
+        bytes memory data = abi.encodeWithSignature("getCurrentLiveBalances()");
+        (bool success, bytes memory result) = address(balancerPool).staticcall(data);
 
-        revert("FarmMigrationOrchestratorV3Router: Use FarmMigrationOrchestratorV3Executor for migration");
+        if (success && result.length >= 64) {
+            uint256[] memory balances = abi.decode(result, (uint256[]));
+            if (balances.length >= 2) {
+                tbtcBalance = balances[0];
+                verseBalance = balances[1];
+            }
+        }
     }
 
 }
