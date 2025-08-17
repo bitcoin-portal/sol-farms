@@ -1,28 +1,14 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity =0.8.26;
 
 import "./IERC20.sol";
 import "./SafeERC20.sol";
 import "./IBalancerV3Router.sol";
 import "./IPermit2.sol";
+import "./ISimpleFarm.sol";
+import "./IBalancerV3Pool.sol";
 import "forge-std/console2.sol";
-
-// SimpleFarm Interface
-interface ISimpleFarm {
-    function balanceOf(address account) external view returns (uint256);
-    function transfer(address recipient, uint256 amount) external returns (bool);
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-    function approve(address spender, uint256 amount) external returns (bool);
-    function farmDeposit(uint256 amount) external;
-    function farmWithdraw(uint256 amount) external;
-}
-
-// Balancer V3 Pool Interface
-interface IBalancerV3Pool {
-    function getTokens() external view returns (address[] memory);
-    function balanceOf(address account) external view returns (uint256);
-    function totalSupply() external view returns (uint256);
-}
 
 /**
  * @title FarmMigrationOrchestratorV3Router

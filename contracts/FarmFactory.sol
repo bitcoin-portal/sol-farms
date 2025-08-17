@@ -2,19 +2,7 @@
 
 pragma solidity =0.8.26;
 
-interface ISimpleFarm {
-
-    function initialize(
-        address _stakeToken,
-        address _rewardToken,
-        uint256 _defaultDuration,
-        address _owner,
-        address _manager,
-        string calldata _name,
-        string calldata _symbol
-    )
-        external;
-}
+import "./ISimpleFarm.sol";
 
 contract FarmFactory {
 

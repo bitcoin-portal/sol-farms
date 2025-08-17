@@ -2,40 +2,8 @@
 
 pragma solidity =0.8.26;
 
-interface ISimpleFarm {
-
-    function setRewardRate(
-        uint256 newRate
-    )
-        external;
-
-    function rewardToken()
-        external
-        view
-        returns (IERC20);
-
-    function rewardDuration()
-        external
-        view
-        returns (uint256);
-}
-
-interface IERC20 {
-
-    function transfer(
-        address to,
-        uint256 amount
-    )
-        external
-        returns (bool);
-
-    function approve(
-        address spender,
-        uint256 amount
-    )
-        external
-        returns (bool);
-}
+import "./ISimpleFarm.sol";
+import "./IERC20.sol";
 
 contract SimpleManager {
 
