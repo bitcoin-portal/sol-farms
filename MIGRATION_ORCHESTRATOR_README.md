@@ -166,25 +166,48 @@ The contract is optimized for gas efficiency by:
 To test the contract:
 
 ```bash
-# Run tests
-forge test --match-contract FarmMigrationOrchestrator
+# Run all orchestrator tests (including mainnet fork tests)
+bun run foundry-test-orchestrator
 
-# Run with gas reporting
-forge test --match-contract FarmMigrationOrchestrator --gas-report
+# Run only executor contract tests
+bun run foundry-test-executor
+
+# Run mainnet fork tests only
+bun run foundry-test-orchestrator-fork
+
+# Show all available orchestrator commands
+bun run show-orchestrator-commands
+
+# Manual forge commands (alternative)
+forge test --match-contract FarmMigrationOrchestrator --fork-url https://mainnet.infura.io/v3/YOUR_API_KEY
+forge test --match-contract FarmMigrationOrchestratorV3ExecutorTest
 ```
 
 ## Deployment
 
 ### Mainnet Deployment
 ```bash
-# Set mainnet RPC URL
-export RPC_URL="https://eth-mainnet.alchemyapi.io/v2/YOUR_API_KEY"
+# Deploy to mainnet
+bun run deploy-migration-executor
 
-# Deploy
+# Deploy to polygon
+bun run deploy-migration-executor-polygon
+
+# Manual deployment (alternative)
 forge script contracts/Scripts/DeployMigrationOrchestrator.s.sol \
     --rpc-url $RPC_URL \
     --broadcast \
     --verify
+```
+
+### Environment Variables Required
+Make sure to set these environment variables before deployment:
+```bash
+export PRIVATE_KEY="your_private_key"
+export SIMPLE_FARM_A="0x..."
+export SIMPLE_FARM_B="0x..."
+export VERSE_TOKEN="0x..."
+export TBTC_TOKEN="0x..."
 ```
 
 ### Verification
