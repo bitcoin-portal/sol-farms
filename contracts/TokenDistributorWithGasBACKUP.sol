@@ -7,6 +7,7 @@ import "./SafeERC20.sol";
 contract TokenDistributorWithGas is SafeERC20 {
 
     address public owner;
+    address public token;
     address public manager;
 
     uint256 public coolDown;
@@ -115,6 +116,15 @@ contract TokenDistributorWithGas is SafeERC20 {
         proposedOwner = address(0x0);
     }
 
+    function defineToken(
+        address _token
+    )
+        external
+        onlyOwner
+    {
+        token = _token;
+    }
+
     function defineCoolDown(
         uint256 _coolDown
     )
@@ -171,7 +181,6 @@ contract TokenDistributorWithGas is SafeERC20 {
     }
 
     function sendTokens(
-        address _token,
         address[] calldata _recipients,
         uint256[] calldata _amounts
     )
@@ -187,7 +196,7 @@ contract TokenDistributorWithGas is SafeERC20 {
 
             if (enableCoolDown == false) {
                 safeTransfer(
-                    IERC20(_token),
+                    IERC20(token),
                     _recipients[i],
                     _amounts[i]
                 );
@@ -202,7 +211,7 @@ contract TokenDistributorWithGas is SafeERC20 {
             lastDistributed[_recipients[i]] = block.timestamp;
 
             safeTransfer(
-                IERC20(_token),
+                IERC20(token),
                 _recipients[i],
                 _amounts[i]
             );
@@ -210,7 +219,6 @@ contract TokenDistributorWithGas is SafeERC20 {
     }
 
     function sendTokensWithGas(
-        address _token,
         address[] calldata _recipients,
         uint256[] calldata _amounts
     )
@@ -241,7 +249,7 @@ contract TokenDistributorWithGas is SafeERC20 {
 
             if (enableCoolDown == false) {
                 safeTransfer(
-                    IERC20(_token),
+                    IERC20(token),
                     _recipients[i],
                     _amounts[i]
                 );
@@ -256,7 +264,7 @@ contract TokenDistributorWithGas is SafeERC20 {
             lastDistributed[_recipients[i]] = block.timestamp;
 
             safeTransfer(
-                IERC20(_token),
+                IERC20(token),
                 _recipients[i],
                 _amounts[i]
             );

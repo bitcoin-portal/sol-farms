@@ -27,15 +27,12 @@ contract TokenDistributorWithGasCooldownTest is Test {
         distributor = new TokenDistributorWithGas();
         token = new TestToken();
 
-        // Setup initial states
-        distributor.defineToken(address(token));
-
         // Fund distributor with ETH for gas distribution
         vm.deal(address(distributor), 10 ether);
 
         // Fund distributor with tokens
         token.transfer(address(distributor), 1000 ether);
-        
+
         // Fund bob with enough ETH to not trigger gas distribution
         vm.deal(bob, 1 ether);
     }
@@ -45,13 +42,13 @@ contract TokenDistributorWithGasCooldownTest is Test {
     {
         // Check default settings
         assertEq(distributor.coolDown(), 2 minutes);
-        
+
         // Update cooldown time
         uint256 newCooldown = 5 minutes;
         distributor.defineCoolDown(newCooldown);
         assertEq(distributor.coolDown(), newCooldown);
     }
-    
+
     function testVisibilityOfEnableCoolDown()
         public
     {
@@ -59,7 +56,7 @@ contract TokenDistributorWithGasCooldownTest is Test {
         // by the owner to toggle the cooldown functionality
         distributor.changeEnableCoolDown(true);
         distributor.changeEnableCoolDown(false);
-        
+
         // Test that non-owners cannot call it
         vm.prank(alice);
         vm.expectRevert("TokenDistributorWithGas: INVALID_OWNER");

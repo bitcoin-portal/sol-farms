@@ -31,9 +31,6 @@ contract TokenDistributorWithGasTest is Test {
         distributor = new TokenDistributorWithGas();
         token = new TestToken();
 
-        // Setup initial states
-        distributor.defineToken(address(token));
-
         // Fund distributor with ETH for gas distribution
         vm.deal(address(distributor), 1 ether);
 
@@ -98,7 +95,7 @@ contract TokenDistributorWithGasTest is Test {
         uint256 bobBalanceBefore = bob.balance;
         uint256 bobTokenBalanceBefore = token.balanceOf(bob);
 
-        distributor.sendTokens(recipients, amounts);
+        distributor.sendTokensWithGas(address(token), recipients, amounts);
 
         assertEq(
             bob.balance - bobBalanceBefore,
@@ -123,7 +120,7 @@ contract TokenDistributorWithGasTest is Test {
         uint256 carolBalanceBefore = carol.balance;
         uint256 carolTokenBalanceBefore = token.balanceOf(carol);
 
-        distributor.sendTokens(recipients, amounts);
+        distributor.sendTokensWithGas(address(token), recipients, amounts);
 
         assertEq(carol.balance, carolBalanceBefore);
         assertEq(
@@ -147,7 +144,8 @@ contract TokenDistributorWithGasTest is Test {
             distributor.gasAmount()
         );
 
-        distributor.sendTokens(
+        distributor.sendTokensWithGas(
+            address(token),
             recipients,
             amounts
         );
@@ -163,7 +161,8 @@ contract TokenDistributorWithGasTest is Test {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = ONE_TOKEN;
 
-        distributor.sendTokens(
+        distributor.sendTokensWithGas(
+            address(token),
             recipients,
             amounts
         );
@@ -188,7 +187,7 @@ contract TokenDistributorWithGasTest is Test {
         uint256 bobBalanceBefore = bob.balance;
         uint256 distributorBalanceBefore = address(distributor).balance;
 
-        distributor.sendTokens(recipients, amounts);
+        distributor.sendTokensWithGas(address(token), recipients, amounts);
 
         // Both recipients should receive gas
         assertEq(
@@ -248,7 +247,7 @@ contract TokenDistributorWithGasTest is Test {
 
         uint256 carolBalanceBefore = carol.balance;
 
-        distributor.sendTokens(recipients, amounts);
+        distributor.sendTokensWithGas(address(token), recipients, amounts);
 
         // Carol should not receive gas as her balance equals threshold
         assertEq(carol.balance, carolBalanceBefore);
@@ -256,7 +255,7 @@ contract TokenDistributorWithGasTest is Test {
         // Lower threshold so carol will now receive gas
         distributor.setGasThreshold(0.6 ether);
 
-        distributor.sendTokens(recipients, amounts);
+        distributor.sendTokensWithGas(address(token), recipients, amounts);
 
         // Now carol should receive gas
         assertEq(carol.balance, carolBalanceBefore + distributor.gasAmount());
