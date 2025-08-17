@@ -207,7 +207,8 @@ contract FarmMigrationOrchestratorForkTest is Test {
             receiptBalance,
             verseToSwap,
             minTbtcOut,
-            minLpOut
+            minLpOut,
+            block.timestamp + 3600 // 1 hour deadline
         ) {
             // Get final balances
             uint256 finalVerse = verseToken.balanceOf(user1);
@@ -388,7 +389,8 @@ contract FarmMigrationOrchestratorForkTest is Test {
             initialFarmA,
             verseToSwap,
             minTbtcOut,
-            minLpOut
+            minLpOut,
+            block.timestamp + 3600 // 1 hour deadline
         ) {
             // Get final balances
             uint256 finalVerse = verseToken.balanceOf(user1);
@@ -472,7 +474,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
         tbtcToken.approve(address(orchestratorV3), tbtcAmount);
 
         // Call addLiquidity directly
-        uint256 lpTokensReceived = orchestratorV3.addLiquidityPublic(verseAmount, tbtcAmount, 0);
+        uint256 lpTokensReceived = orchestratorV3.addLiquidityPublic(verseAmount, tbtcAmount, 0, block.timestamp + 3600);
 
         // Check final balances
         uint256 finalVerse = verseToken.balanceOf(user1);
@@ -539,7 +541,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
         tbtcToken.approve(address(orchestratorV3), tbtcAmount);
 
         // Call addLiquidityAndStake with a small fixed exactBptAmountOut (this worked before)
-        uint256 farmBReceipts = orchestratorV3.addLiquidityAndStake(verseAmount, tbtcAmount, 0);
+        uint256 farmBReceipts = orchestratorV3.addLiquidityAndStake(verseAmount, tbtcAmount, 0, block.timestamp + 3600);
 
         // Check final balances
         uint256 finalVerse = verseToken.balanceOf(user1);
@@ -611,7 +613,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
             uint256 farmBBefore = simpleFarmB.balanceOf(user1);
 
                                 // Call addLiquidityAndStake
-            uint256 farmBReceipts = orchestratorV3.addLiquidityAndStake(verseAmounts[i], tbtcAmounts[i], 9900);
+            uint256 farmBReceipts = orchestratorV3.addLiquidityAndStake(verseAmounts[i], tbtcAmounts[i], 9900, block.timestamp + 3600);
 
             // Check FarmB balance after
             uint256 farmBAfter = simpleFarmB.balanceOf(user1);
@@ -658,7 +660,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
         console.log("tBTC amount:", tbtcAmount);
 
         // Call addLiquidityPublic to get LP tokens directly
-        uint256 lpTokensReceived = orchestratorV3.addLiquidityPublic(verseAmount, tbtcAmount, 0);
+        uint256 lpTokensReceived = orchestratorV3.addLiquidityPublic(verseAmount, tbtcAmount, 0, block.timestamp + 3600);
 
         console.log("LP tokens received:", lpTokensReceived);
         console.log("LP tokens in wei:", lpTokensReceived);
@@ -730,7 +732,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
         console.log("tBTC amount:", largeTbtcAmount);
 
         // Call addLiquidityPublic
-        uint256 lpTokensReceived = orchestratorV3.addLiquidityPublic(largeVerseAmount, largeTbtcAmount, 0);
+        uint256 lpTokensReceived = orchestratorV3.addLiquidityPublic(largeVerseAmount, largeTbtcAmount, 0, block.timestamp + 3600);
 
         console.log("LP tokens received with large amounts:", lpTokensReceived);
         console.log("LP tokens in human readable:", lpTokensReceived / 1e18);
@@ -779,7 +781,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
         tbtcToken.approve(address(orchestratorV3), tbtcAmount);
 
         // Call addLiquidityAndStake with 0% slippage
-        uint256 farmBReceipts = orchestratorV3.addLiquidityAndStake(verseAmount, tbtcAmount, 0);
+        uint256 farmBReceipts = orchestratorV3.addLiquidityAndStake(verseAmount, tbtcAmount, 0, block.timestamp + 3600);
 
         // Check final balances
         uint256 finalVerse = verseToken.balanceOf(user1);
@@ -849,7 +851,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
         tbtcToken.approve(address(orchestratorV3), tbtcAmount);
 
         // Call addLiquidityAndStake with slippage
-        uint256 farmBReceipts = orchestratorV3.addLiquidityAndStake(verseAmount, tbtcAmount, slippageBps);
+        uint256 farmBReceipts = orchestratorV3.addLiquidityAndStake(verseAmount, tbtcAmount, slippageBps, block.timestamp + 3600);
 
         // Check final balances
         uint256 finalVerse = verseToken.balanceOf(user1);
@@ -967,7 +969,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
         vm.recordLogs();
 
         // Call addLiquidityPublic to trigger the event
-        uint256 lpTokensReceived = orchestratorV3.addLiquidityPublic(verseAmount, tbtcAmount, 0);
+        uint256 lpTokensReceived = orchestratorV3.addLiquidityPublic(verseAmount, tbtcAmount, 0, block.timestamp + 3600);
 
         // Get the recorded logs
         Vm.Log[] memory logs = vm.getRecordedLogs();
@@ -1028,6 +1030,95 @@ contract FarmMigrationOrchestratorForkTest is Test {
         assertTrue(eventFound, "LiquidityAdded event should be emitted");
         
         console2.log("LiquidityAdded event test passed!");
+
+        vm.stopPrank();
+    }
+
+    function testDeadlineValidation() public {
+        // Test deadline validation functionality
+        console2.log("Testing deadline validation...");
+
+        // Deploy the orchestrator
+        FarmMigrationOrchestratorV3Router orchestratorV3 = new FarmMigrationOrchestratorV3Router(
+            address(simpleFarmA),
+            address(simpleFarmB),
+            VERSE_TOKEN,
+            TBTC_TOKEN,
+            BALANCER_POOL,
+            BALANCER_V3_ROUTER
+        );
+
+        // Test amounts
+        uint256 verseAmount = 100 * 1e18; // 100 VERSE
+        uint256 tbtcAmount = 20 * 1e18;   // 20 tBTC
+
+        vm.startPrank(user1);
+
+        // Deal tokens to user1
+        deal(address(verseToken), user1, verseAmount);
+        deal(address(tbtcToken), user1, tbtcAmount);
+
+        // Approve orchestrator to spend tokens
+        verseToken.approve(address(orchestratorV3), verseAmount);
+        tbtcToken.approve(address(orchestratorV3), tbtcAmount);
+
+        // Test 1: Call with expired deadline (should revert)
+        uint256 expiredDeadline = block.timestamp - 3600; // 1 hour in the past
+        
+        console2.log("Testing with expired deadline:", expiredDeadline);
+        console2.log("Current block timestamp:", block.timestamp);
+        
+        vm.expectRevert("FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
+        orchestratorV3.addLiquidityPublic(verseAmount, tbtcAmount, 0, expiredDeadline);
+        
+        console2.log("SUCCESS: addLiquidityPublic correctly reverts with expired deadline");
+
+        // Test 2: Call with valid deadline (should succeed)
+        uint256 validDeadline = block.timestamp + 3600; // 1 hour in the future
+        
+        console2.log("Testing with valid deadline:", validDeadline);
+        
+        uint256 lpTokensReceived = orchestratorV3.addLiquidityPublic(verseAmount, tbtcAmount, 0, validDeadline);
+        
+        console2.log("SUCCESS: addLiquidityPublic succeeds with valid deadline");
+        console2.log("LP tokens received:", lpTokensReceived);
+        assertGt(lpTokensReceived, 0, "Should receive LP tokens with valid deadline");
+
+        // Test 3: Test addLiquidityAndStake with expired deadline
+        deal(address(verseToken), user1, verseAmount); // Get more tokens
+        deal(address(tbtcToken), user1, tbtcAmount);
+        verseToken.approve(address(orchestratorV3), verseAmount);
+        tbtcToken.approve(address(orchestratorV3), tbtcAmount);
+        
+        vm.expectRevert("FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
+        orchestratorV3.addLiquidityAndStake(verseAmount, tbtcAmount, 0, expiredDeadline);
+        
+        console2.log("SUCCESS: addLiquidityAndStake correctly reverts with expired deadline");
+
+        // Test 4: Test addLiquidityAndStake with valid deadline
+        deal(address(verseToken), user1, verseAmount); // Get more tokens
+        deal(address(tbtcToken), user1, tbtcAmount);
+        verseToken.approve(address(orchestratorV3), verseAmount);
+        tbtcToken.approve(address(orchestratorV3), tbtcAmount);
+        
+        uint256 farmBReceipts = orchestratorV3.addLiquidityAndStake(verseAmount, tbtcAmount, 0, validDeadline);
+        
+        console2.log("SUCCESS: addLiquidityAndStake succeeds with valid deadline");
+        console2.log("FarmB receipts received:", farmBReceipts);
+        assertGt(farmBReceipts, 0, "Should receive FarmB receipts with valid deadline");
+
+        // Test 5: Test executeMigration with expired deadline
+        uint256 farmAReceipts = simpleFarmA.balanceOf(user1);
+        if (farmAReceipts > 0) {
+            simpleFarmA.approve(address(orchestratorV3), farmAReceipts);
+            
+            vm.expectRevert("FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
+            orchestratorV3.executeMigration(farmAReceipts, farmAReceipts / 5, 0, 0, expiredDeadline);
+            
+            console2.log("SUCCESS: executeMigration correctly reverts with expired deadline");
+        }
+
+        console2.log("All deadline validation tests passed!");
 
         vm.stopPrank();
     }

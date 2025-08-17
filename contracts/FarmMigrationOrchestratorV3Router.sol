@@ -127,7 +127,8 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
      */
     function _swapVerseToTbtcViaRouter(
         uint256 _verseAmount,
-        uint256 _minTbtcOut
+        uint256 _minTbtcOut,
+        uint256 _deadline
     )
         internal
         returns (uint256)
@@ -143,7 +144,7 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             address(verseToken),
             address(balancerRouter),
             uint160(_verseAmount),
-            uint48(block.timestamp + 3600)
+            uint48(_deadline)
         );
 
         // Execute swap using swapSingleTokenExactIn
@@ -153,7 +154,7 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             tbtcToken,
             _verseAmount,
             _minTbtcOut,
-            block.timestamp + 3600, // 1 hour deadline
+            _deadline,
             false, // wethIsEth
             "" // userData
         );
@@ -168,7 +169,8 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
     function _addLiquidityViaRouter(
         uint256 _verseAmount,
         uint256 _tbtcAmount,
-        uint256 _exactBptAmountOut
+        uint256 _exactBptAmountOut,
+        uint256 _deadline
     )
         internal
         returns (uint256)
@@ -189,14 +191,14 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             address(verseToken),
             address(balancerRouter),
             uint160(_verseAmount),
-            uint48(block.timestamp + 3600)
+            uint48(_deadline)
         );
 
         IPermit2(PERMIT2).approve(
             address(tbtcToken),
             address(balancerRouter),
             uint160(_tbtcAmount),
-            uint48(block.timestamp + 3600)
+            uint48(_deadline)
         );
 
         // Get pool tokens to determine order
@@ -353,7 +355,8 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         uint256 lpTokensReceived = _addLiquidityViaRouter(
             _verseAmount,
             _tbtcAmount,
-            expectedLpTokens
+            expectedLpTokens,
+            block.timestamp + 3600 // Default deadline for internal calls
         );
 
         return lpTokensReceived;
@@ -367,7 +370,8 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
     function addLiquidityPublic(
         uint256 _verseAmount,
         uint256 _tbtcAmount,
-        uint256 _exactBptAmountOut
+        uint256 _exactBptAmountOut,
+        uint256 _deadline
     )
         external
         returns (uint256)
@@ -388,10 +392,14 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             ? calculateExpectedLpTokens(_verseAmount, _tbtcAmount)
             : _exactBptAmountOut;
 
+        // Validate deadline
+        require(block.timestamp <= _deadline, "FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
+
         uint256 lpTokensReceived = _addLiquidityViaRouter(
             _verseAmount,
             _tbtcAmount,
-            exactBptAmountOut
+            exactBptAmountOut,
+            _deadline
         );
 
         // Check orchestrator balances after liquidity addition
@@ -443,7 +451,8 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         return _addLiquidityViaRouter(
             _verseAmount,
             _tbtcAmount,
-            _exactBptAmountOut
+            _exactBptAmountOut,
+            block.timestamp + 3600 // Default deadline for internal calls
         );
     }
 
@@ -458,7 +467,8 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
     function addLiquidityAndStake(
         uint256 _verseAmount,
         uint256 _tbtcAmount,
-        uint256 _slippageBps
+        uint256 _slippageBps,
+        uint256 _deadline
     )
         external
         returns (uint256 farmBReceipts)
@@ -485,10 +495,14 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         console2.log("Original exactBptAmountOut:", exactBptAmountOut);
         console2.log("Slippage adjusted BPT:", slippageAdjustedBpt);
 
+        // Validate deadline
+        require(block.timestamp <= _deadline, "FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
+
         uint256 lpTokensReceived = _addLiquidityViaRouter(
             _verseAmount,
             _tbtcAmount,
-            slippageAdjustedBpt
+            slippageAdjustedBpt,
+            _deadline
         );
 
         console2.log("LP tokens received from addLiquidity:", lpTokensReceived);
@@ -724,7 +738,7 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         console2.log("Using tBTC:", neededTbtc);
 
         // Add liquidity using the proportional method
-        _addLiquidityViaRouter(neededVerse, neededTbtc, _exactLpTokensOut);
+        _addLiquidityViaRouter(neededVerse, neededTbtc, _exactLpTokensOut, block.timestamp + 3600);
 
         // Transfer LP tokens to user
         uint256 lpTokensReceived = lpToken.balanceOf(address(this));
@@ -771,7 +785,8 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         uint256 _farmReceiptAmount,
         uint256 _verseToSwap,
         uint256 _minTbtcOut,
-        uint256 _minLpOut
+        uint256 _minLpOut,
+        uint256 _deadline
     )
         external
     {
@@ -800,8 +815,11 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
 
         console2.log("Swapping VERSE to tBTC:", verseToSwapAmount);
 
+        // Validate deadline
+        require(block.timestamp <= _deadline, "FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
+
         // Execute the swap
-        uint256 tbtcReceived = _swapVerseToTbtcViaRouter(verseToSwapAmount, _minTbtcOut);
+        uint256 tbtcReceived = _swapVerseToTbtcViaRouter(verseToSwapAmount, _minTbtcOut, _deadline);
 
         // Step 4: Add balanced liquidity with remaining VERSE and received tBTC
         uint256 remainingVerse = verseToUse - verseToSwapAmount; // 80% of VERSE
