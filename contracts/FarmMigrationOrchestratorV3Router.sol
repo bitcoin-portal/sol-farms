@@ -3,7 +3,7 @@ pragma solidity =0.8.26;
 
 import "./IERC20.sol";
 import "./SafeERC20.sol";
-import "./BalancerV3Router.sol";
+import "./IBalancerV3Router.sol";
 import "./IPermit2.sol";
 import "forge-std/console2.sol";
 
@@ -655,7 +655,17 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
      * @return actualVerseIn Actual amount of VERSE used
      * @return actualTbtcIn Actual amount of tBTC used
      */
-    function addLiquidityExactOut(uint256 _exactLpTokensOut, uint256 _maxVerseIn, uint256 _maxTbtcIn) external returns (uint256 actualVerseIn, uint256 actualTbtcIn) {
+    function addLiquidityExactOut(
+        uint256 _exactLpTokensOut,
+        uint256 _maxVerseIn,
+        uint256 _maxTbtcIn
+    )
+        external
+        returns (
+            uint256 actualVerseIn,
+            uint256 actualTbtcIn
+        )
+    {
         // Calculate the amounts needed for the desired LP tokens
         (uint256 neededVerse, uint256 neededTbtc) = calculateAmountsForLpTokens(_exactLpTokensOut);
 
