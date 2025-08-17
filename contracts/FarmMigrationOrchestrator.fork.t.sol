@@ -1026,7 +1026,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
         verseToken.approve(address(orchestratorV3), verseAmount);
         tbtcToken.approve(address(orchestratorV3), tbtcAmount);
 
-        vm.expectRevert("FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
+        vm.expectRevert(abi.encodeWithSignature("AllowanceExpired(uint256)", expiredDeadline));
         orchestratorV3.addLiquidityAndStake(verseAmount, tbtcAmount, 0, expiredDeadline);
 
         console2.log("SUCCESS: addLiquidityAndStake correctly reverts with expired deadline");
@@ -1044,25 +1044,31 @@ contract FarmMigrationOrchestratorForkTest is Test {
         assertGt(farmBReceipts, 0, "Should receive FarmB receipts with valid deadline");
 
         // Test 5: Test executeMigration with expired deadline
+        // First, give user1 some FarmA receipt tokens by staking VERSE in FarmA
+        uint256 verseForFarmA = 100 * 1e18; // 100 VERSE to stake
+        deal(address(verseToken), user1, verseForFarmA);
+        verseToken.approve(address(simpleFarmA), verseForFarmA);
+        simpleFarmA.farmDeposit(verseForFarmA);
+        
         uint256 farmAReceipts = simpleFarmA.balanceOf(user1);
-        if (farmAReceipts > 0) {
-            // Deploy executor for this test
-            FarmMigrationOrchestratorV3Executor executor = new FarmMigrationOrchestratorV3Executor(
-                address(simpleFarmA),
-                address(simpleFarmB),
-                VERSE_TOKEN,
-                TBTC_TOKEN,
-                BALANCER_POOL,
-                BALANCER_V3_ROUTER
-            );
-            
-            simpleFarmA.approve(address(executor), farmAReceipts);
+        assertGt(farmAReceipts, 0, "User should have FarmA receipt tokens");
+        
+        // Deploy executor for this test
+        FarmMigrationOrchestratorV3Executor executor = new FarmMigrationOrchestratorV3Executor(
+            address(simpleFarmA),
+            address(simpleFarmB),
+            VERSE_TOKEN,
+            TBTC_TOKEN,
+            BALANCER_POOL,
+            BALANCER_V3_ROUTER
+        );
+        
+        simpleFarmA.approve(address(executor), farmAReceipts);
 
-            vm.expectRevert("FarmMigrationOrchestratorV3Executor: DEADLINE_EXPIRED");
-            executor.executeMigration(farmAReceipts, farmAReceipts / 5, 0, expiredDeadline);
+        vm.expectRevert("FarmMigrationOrchestratorV3Executor: DEADLINE_EXPIRED");
+        executor.executeMigration(farmAReceipts, farmAReceipts / 5, 0, expiredDeadline);
 
-            console2.log("SUCCESS: executeMigration correctly reverts with expired deadline");
-        }
+        console2.log("SUCCESS: executeMigration correctly reverts with expired deadline");
 
         console2.log("All deadline validation tests passed!");
 

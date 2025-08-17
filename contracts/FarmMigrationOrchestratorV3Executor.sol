@@ -112,7 +112,7 @@ contract FarmMigrationOrchestratorV3Executor is FarmMigrationOrchestratorV3Route
         console2.log("  tBTC amount:", tbtcReceived);
 
         // Use the working addLiquidity approach
-        uint256 lpTokensReceived = _addLiquidity(remainingVerse, tbtcReceived);
+        uint256 lpTokensReceived = _addLiquidity(remainingVerse, tbtcReceived, _deadline);
 
         console2.log("LP tokens received:", lpTokensReceived);
 

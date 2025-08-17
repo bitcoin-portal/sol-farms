@@ -8,7 +8,6 @@ import "./IBalancerV3Router.sol";
 import "./IPermit2.sol";
 import "./ISimpleFarm.sol";
 import "./IBalancerV3Pool.sol";
-import "forge-std/console2.sol";
 
 /**
  * @title FarmMigrationOrchestratorV3Router
@@ -88,13 +87,11 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         internal
         returns (uint256)
     {
-        // Always approve Permit2 with max amount to avoid allowance issues
         verseToken.approve(
             PERMIT2,
             type(uint256).max
         );
 
-        // Give Router permission within Permit2
         IPermit2(PERMIT2).approve(
             address(verseToken),
             address(balancerRouter),
@@ -102,7 +99,6 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             uint48(_deadline)
         );
 
-        // Execute swap using swapSingleTokenExactIn
         uint256 amountOut = balancerRouter.swapSingleTokenExactIn(
             address(balancerPool),
             verseToken,
@@ -132,13 +128,11 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         internal
         returns (uint256)
     {
-        // Always approve Permit2 with max amount to avoid allowance issues
         tbtcToken.approve(
             PERMIT2,
             type(uint256).max
         );
 
-        // Give Router permission within Permit2
         IPermit2(PERMIT2).approve(
             address(tbtcToken),
             address(balancerRouter),
@@ -146,7 +140,6 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             uint48(_deadline)
         );
 
-        // Execute swap using swapSingleTokenExactIn
         uint256 amountOut = balancerRouter.swapSingleTokenExactIn(
             address(balancerPool),
             tbtcToken,
@@ -174,7 +167,6 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         internal
         returns (uint256)
     {
-        // Always approve Permit2 with max amounts
         verseToken.approve(
             PERMIT2,
             type(uint256).max
@@ -185,7 +177,6 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             type(uint256).max
         );
 
-        // Give Router permission within Permit2 for both tokens
         IPermit2(PERMIT2).approve(
             address(verseToken),
             address(balancerRouter),
@@ -200,7 +191,6 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             uint48(_deadline)
         );
 
-        // Get pool tokens to determine order
         address[] memory poolTokens = balancerPool.getTokens();
 
         // Prepare maxAmountsIn array with correct token order
@@ -213,10 +203,6 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             maxAmountsIn[1] = _verseAmount;  // VERSE second
         }
 
-        console2.log("Adding liquidity with maxAmountsIn:", maxAmountsIn[0], maxAmountsIn[1]);
-        console2.log("exactBptAmountOut:", _exactBptAmountOut);
-
-        // Use addLiquidityProportional with the provided exactBptAmountOut
         uint256[] memory amountsIn = balancerRouter.addLiquidityProportional(
             address(balancerPool),
             maxAmountsIn,
@@ -225,12 +211,10 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             "" // userData
         );
 
-        // Check the actual LP token balance we received
         uint256 bptAmountOut = lpToken.balanceOf(
             address(this)
         );
 
-        // Determine the actual amounts used for each token based on pool token order
         uint256 actualVerseAmount;
         uint256 actualTbtcAmount;
 
@@ -244,12 +228,6 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             actualTbtcAmount = amountsIn[0];
         }
 
-        console2.log("Actual amounts used for liquidity:");
-        console2.log("  VERSE used:", actualVerseAmount);
-        console2.log("  tBTC used:", actualTbtcAmount);
-        console2.log("  LP tokens received:", bptAmountOut);
-
-        // Emit event with the actual amounts used and LP tokens received
         emit LiquidityAdded(
             msg.sender,
             actualVerseAmount,
@@ -267,7 +245,8 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
      */
     function _addLiquidity(
         uint256 _verseAmount,
-        uint256 _tbtcAmount
+        uint256 _tbtcAmount,
+        uint256 _deadline
     )
         internal
         returns (uint256)
@@ -283,7 +262,7 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             _verseAmount,
             _tbtcAmount,
             expectedLpTokens,
-            block.timestamp + 3600 // Default deadline for internal calls
+            _deadline
         );
 
         return lpTokensReceived;
@@ -303,24 +282,31 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         external
         returns (uint256)
     {
-        // Transfer tokens from user to this contract
-        require(
-            verseToken.transferFrom(msg.sender, address(this), _verseAmount),
-            "VERSE transfer failed"
+        verseToken.transferFrom(
+            msg.sender,
+            address(this),
+            _verseAmount
         );
 
-        require(
-            tbtcToken.transferFrom(msg.sender, address(this), _tbtcAmount),
-            "tBTC transfer failed"
+        tbtcToken.transferFrom(
+            msg.sender,
+            address(this),
+            _tbtcAmount
         );
 
         // Add liquidity with specified exactBptAmountOut or auto-calculate if 0
         uint256 exactBptAmountOut = _exactBptAmountOut == 0
-            ? calculateExpectedLpTokens(_verseAmount, _tbtcAmount)
+            ? calculateExpectedLpTokens(
+                _verseAmount,
+                _tbtcAmount
+            )
             : _exactBptAmountOut;
 
         // Validate deadline
-        require(block.timestamp <= _deadline, "FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
+        require(
+            block.timestamp <= _deadline,
+            "FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED"
+        );
 
         uint256 lpTokensReceived = _addLiquidityViaRouter(
             _verseAmount,
@@ -332,32 +318,27 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         // Check orchestrator balances after liquidity addition
         uint256 orchestratorVerseBalance = verseToken.balanceOf(address(this));
         uint256 orchestratorTbtcBalance = tbtcToken.balanceOf(address(this));
-        console2.log("Orchestrator balances after liquidity addition:");
-        console2.log("  VERSE remaining:", orchestratorVerseBalance);
-        console2.log("  tBTC remaining:", orchestratorTbtcBalance);
 
         // Transfer LP tokens back to user
         if (lpTokensReceived > 0) {
-            require(
-                lpToken.transfer(msg.sender, lpTokensReceived),
-                "LP token transfer failed"
+            lpToken.transfer(
+                msg.sender,
+                lpTokensReceived
             );
         }
 
         // Return any remaining tokens to user
         if (orchestratorVerseBalance > 0) {
-            console2.log("Returning remaining VERSE to user:", orchestratorVerseBalance);
-            require(
-                verseToken.transfer(msg.sender, orchestratorVerseBalance),
-                "VERSE return transfer failed"
+            verseToken.transfer(
+                msg.sender,
+                orchestratorVerseBalance
             );
         }
 
         if (orchestratorTbtcBalance > 0) {
-            console2.log("Returning remaining tBTC to user:", orchestratorTbtcBalance);
-            require(
-                tbtcToken.transfer(msg.sender, orchestratorTbtcBalance),
-                "tBTC return transfer failed"
+            tbtcToken.transfer(
+                msg.sender,
+                orchestratorTbtcBalance
             );
         }
 
@@ -381,30 +362,26 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         external
         returns (uint256 farmBReceipts)
     {
-        // Transfer tokens from user to this contract
-        require(
-            verseToken.transferFrom(msg.sender, address(this), _verseAmount),
-            "VERSE transfer failed"
+        verseToken.transferFrom(
+            msg.sender,
+            address(this),
+            _verseAmount
         );
 
-        require(
-            tbtcToken.transferFrom(msg.sender, address(this), _tbtcAmount),
-            "tBTC transfer failed"
+        tbtcToken.transferFrom(
+            msg.sender,
+            address(this),
+            _tbtcAmount
         );
 
-        // Calculate exactBptAmountOut via query
         uint256 exactBptAmountOut = calculateExpectedLpTokens(
             _verseAmount,
             _tbtcAmount
         );
 
-        // Apply slippage tolerance
-        uint256 slippageAdjustedBpt = (exactBptAmountOut * (10000 - _slippageBps)) / 10000;
-        console2.log("Original exactBptAmountOut:", exactBptAmountOut);
-        console2.log("Slippage adjusted BPT:", slippageAdjustedBpt);
-
-        // Validate deadline
-        require(block.timestamp <= _deadline, "FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
+        uint256 slippageAdjustedBpt = (
+            exactBptAmountOut * (10000 - _slippageBps)
+        ) / 10000;
 
         uint256 lpTokensReceived = _addLiquidityViaRouter(
             _verseAmount,
@@ -413,51 +390,49 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             _deadline
         );
 
-        console2.log("LP tokens received from addLiquidity:", lpTokensReceived);
+        uint256 orchestratorVerseBalance = verseToken.balanceOf(
+            address(this)
+        );
 
-        // Check orchestrator balances after liquidity addition
-        uint256 orchestratorVerseBalance = verseToken.balanceOf(address(this));
-        uint256 orchestratorTbtcBalance = tbtcToken.balanceOf(address(this));
-        console2.log("Orchestrator balances after liquidity addition:");
-        console2.log("  VERSE remaining:", orchestratorVerseBalance);
-        console2.log("  tBTC remaining:", orchestratorTbtcBalance);
+        uint256 orchestratorTbtcBalance = tbtcToken.balanceOf(
+            address(this)
+        );
 
-        // Stake LP tokens in FarmB if we received any
         if (lpTokensReceived > 0) {
-            // Approve FarmB to spend LP tokens
-            lpToken.approve(address(simpleFarmB), lpTokensReceived);
 
-            // Stake LP tokens in FarmB
-            simpleFarmB.farmDeposit(lpTokensReceived);
+            lpToken.approve(
+                address(simpleFarmB),
+                lpTokensReceived
+            );
 
-            // Get FarmB receipt tokens
-            farmBReceipts = simpleFarmB.balanceOf(address(this));
+            simpleFarmB.farmDeposit(
+                lpTokensReceived
+            );
 
-            console2.log("FarmB receipt tokens received:", farmBReceipts);
+            farmBReceipts = simpleFarmB.balanceOf(
+                address(this)
+            );
 
-            // Transfer FarmB receipt tokens to user
             if (farmBReceipts > 0) {
-                require(
-                    simpleFarmB.transfer(msg.sender, farmBReceipts),
-                    "FarmB receipt transfer failed"
+                simpleFarmB.transfer(
+                    msg.sender,
+                    farmBReceipts
                 );
             }
         }
 
         // Return any remaining tokens to user
         if (orchestratorVerseBalance > 0) {
-            console2.log("Returning remaining VERSE to user:", orchestratorVerseBalance);
-            require(
-                verseToken.transfer(msg.sender, orchestratorVerseBalance),
-                "VERSE return transfer failed"
+            verseToken.transfer(
+                msg.sender,
+                orchestratorVerseBalance
             );
         }
 
         if (orchestratorTbtcBalance > 0) {
-            console2.log("Returning remaining tBTC to user:", orchestratorTbtcBalance);
-            require(
-                tbtcToken.transfer(msg.sender, orchestratorTbtcBalance),
-                "tBTC return transfer failed"
+            tbtcToken.transfer(
+                msg.sender,
+                orchestratorTbtcBalance
             );
         }
 
@@ -483,7 +458,10 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         returns (uint256 farmBReceipts)
     {
         // Validate deadline
-        require(block.timestamp <= _deadline, "FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
+        require(
+            block.timestamp <= _deadline,
+            "FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED"
+        );
 
         // Validate input token
         require(
@@ -491,16 +469,19 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             "Invalid input token - must be VERSE or tBTC"
         );
 
-        bool isVerseInput = _tokenIn == address(verseToken);
-        IERC20 tokenIn = IERC20(_tokenIn);
-
-        // Transfer tokens from user to this contract
-        require(
-            tokenIn.transferFrom(msg.sender, address(this), _amountIn),
-            "Token transfer failed"
+        bool isVerseInput = _tokenIn == address(
+            verseToken
         );
 
-        console2.log("ZAP: Received", _amountIn, isVerseInput ? "VERSE" : "tBTC", "tokens");
+        IERC20 tokenIn = IERC20(
+            _tokenIn
+        );
+
+        tokenIn.transferFrom(
+            msg.sender,
+            address(this),
+            _amountIn
+        );
 
         uint256 verseForLiquidity;
         uint256 tbtcForLiquidity;
@@ -510,24 +491,16 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             uint256 verseToSwap = (_amountIn * 20) / 100; // 20% of VERSE
             verseForLiquidity = _amountIn - verseToSwap; // 80% of VERSE
 
-            console2.log("ZAP: Swapping", verseToSwap, "VERSE to tBTC");
-            console2.log("ZAP: Using", verseForLiquidity, "VERSE for liquidity");
-
             // Swap VERSE to tBTC
             tbtcForLiquidity = _swapVerseToTbtcViaRouter(
                 verseToSwap,
                 0, // minTbtcOut - no minimum for ZAP
                 _deadline
             );
-
-            console2.log("ZAP: Received", tbtcForLiquidity, "tBTC from swap");
-                } else {
+        } else {
             // tBTC input: swap 80% to VERSE for 80/20 ratio
             uint256 tbtcToSwap = (_amountIn * 80) / 100; // 80% of tBTC
             tbtcForLiquidity = _amountIn - tbtcToSwap; // 20% of tBTC
-
-            console2.log("ZAP: Swapping", tbtcToSwap, "tBTC to VERSE");
-            console2.log("ZAP: Using", tbtcForLiquidity, "tBTC for liquidity");
 
             // Swap tBTC to VERSE using the proper swap function
             verseForLiquidity = _swapTbtcToVerseViaRouter(
@@ -535,22 +508,17 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
                 0, // minVerseOut - no minimum for ZAP
                 _deadline
             );
-
-            console2.log("ZAP: Received", verseForLiquidity, "VERSE from swap");
         }
 
-        // Calculate expected LP tokens for the liquidity addition
         uint256 exactBptAmountOut = calculateExpectedLpTokens(
             verseForLiquidity,
             tbtcForLiquidity
         );
 
-        // Apply slippage tolerance
-        uint256 slippageAdjustedBpt = (exactBptAmountOut * (10000 - _slippageBps)) / 10000;
-        console2.log("ZAP: Original exactBptAmountOut:", exactBptAmountOut);
-        console2.log("ZAP: Slippage adjusted BPT:", slippageAdjustedBpt);
+        uint256 slippageAdjustedBpt = (
+            exactBptAmountOut * (10000 - _slippageBps)
+        ) / 10000;
 
-        // Add liquidity using the proportional method
         uint256 lpTokensReceived = _addLiquidityViaRouter(
             verseForLiquidity,
             tbtcForLiquidity,
@@ -558,51 +526,50 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             _deadline
         );
 
-        console2.log("ZAP: LP tokens received from addLiquidity:", lpTokensReceived);
-
         // Check orchestrator balances after liquidity addition
-        uint256 orchestratorVerseBalance = verseToken.balanceOf(address(this));
-        uint256 orchestratorTbtcBalance = tbtcToken.balanceOf(address(this));
-        console2.log("ZAP: Orchestrator balances after liquidity addition:");
-        console2.log("  VERSE remaining:", orchestratorVerseBalance);
-        console2.log("  tBTC remaining:", orchestratorTbtcBalance);
+        uint256 orchestratorVerseBalance = verseToken.balanceOf(
+            address(this)
+        );
 
-        // Stake LP tokens in FarmB if we received any
+        uint256 orchestratorTbtcBalance = tbtcToken.balanceOf(
+            address(this)
+        );
+
         if (lpTokensReceived > 0) {
-            // Approve FarmB to spend LP tokens
-            lpToken.approve(address(simpleFarmB), lpTokensReceived);
+            lpToken.approve(
+                address(simpleFarmB),
+                lpTokensReceived
+            );
 
-            // Stake LP tokens in FarmB
-            simpleFarmB.farmDeposit(lpTokensReceived);
+            simpleFarmB.farmDeposit(
+                lpTokensReceived
+            );
 
-            // Get FarmB receipt tokens
-            farmBReceipts = simpleFarmB.balanceOf(address(this));
-
-            console2.log("ZAP: FarmB receipt tokens received:", farmBReceipts);
+            farmBReceipts = simpleFarmB.balanceOf(
+                address(this)
+            );
 
             // Transfer FarmB receipt tokens to user
             if (farmBReceipts > 0) {
-                require(
-                    simpleFarmB.transfer(msg.sender, farmBReceipts),
-                    "FarmB receipt transfer failed"
+                simpleFarmB.transfer(
+                    msg.sender,
+                    farmBReceipts
                 );
             }
         }
 
         // Return any remaining tokens to user
         if (orchestratorVerseBalance > 0) {
-            console2.log("ZAP: Returning remaining VERSE to user:", orchestratorVerseBalance);
-            require(
-                verseToken.transfer(msg.sender, orchestratorVerseBalance),
-                "VERSE return transfer failed"
+            verseToken.transfer(
+                msg.sender,
+                orchestratorVerseBalance
             );
         }
 
         if (orchestratorTbtcBalance > 0) {
-            console2.log("ZAP: Returning remaining tBTC to user:", orchestratorTbtcBalance);
-            require(
-                tbtcToken.transfer(msg.sender, orchestratorTbtcBalance),
-                "tBTC return transfer failed"
+            tbtcToken.transfer(
+                msg.sender,
+                orchestratorTbtcBalance
             );
         }
 
@@ -623,20 +590,12 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         view
         returns (uint256 expectedLpTokens)
     {
-        // Use manual calculation - router query is not suitable for our use case
-        // Router query tells us "how much tokens needed for X LP tokens"
-        // But we want "how much LP tokens for X token amounts"
-        console2.log("Using manual calculation for LP token estimation");
+        (
+            uint256 tbtcBalance,
+            uint256 verseBalance
+        ) = getPoolBalances();
 
-        // Get current pool state
-        (uint256 tbtcBalance, uint256 verseBalance) = getPoolBalances();
         uint256 lpTotalSupply = balancerPool.totalSupply();
-
-        if (lpTotalSupply == 0 || verseBalance == 0) {
-            expectedLpTokens = 1 * 1e18; // Fallback to 1 LP token
-            console2.log("Pool empty, using fallback:", expectedLpTokens);
-            return expectedLpTokens;
-        }
 
         // Calculate LP tokens based on VERSE proportion (80% of pool)
         uint256 expectedLpTokensFromVerse = _verseAmount
@@ -653,29 +612,38 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             ? expectedLpTokensFromVerse
             : expectedLpTokensFromTbtc;
 
-        console2.log("Manual calculation - LP tokens from VERSE:", expectedLpTokensFromVerse);
-        console2.log("Manual calculation - LP tokens from tBTC:", expectedLpTokensFromTbtc);
-        console2.log("Manual calculation - using smaller value:", expectedLpTokens);
-
         return expectedLpTokens;
     }
 
     /**
      * @notice Get current pool balances
      */
-    function getPoolBalances() public view returns (uint256 tbtcBalance, uint256 verseBalance) {
-        // Call getCurrentLiveBalances on the pool
-        // This returns [tbtcBalance, verseBalance] as fixed point 18 decimals
-        bytes memory data = abi.encodeWithSignature("getCurrentLiveBalances()");
-        (bool success, bytes memory result) = address(balancerPool).staticcall(data);
+    function getPoolBalances()
+        public
+        view
+        returns (
+            uint256 tbtcBalance,
+            uint256 verseBalance
+        )
+    {
+        bytes memory data = abi.encodeWithSignature(
+            "getCurrentLiveBalances()"
+        );
+
+        (
+            bool success,
+            bytes memory result
+        ) = address(balancerPool).staticcall(data);
 
         if (success && result.length >= 64) {
-            uint256[] memory balances = abi.decode(result, (uint256[]));
+            uint256[] memory balances = abi.decode(
+                result,
+                (uint256[])
+            );
             if (balances.length >= 2) {
                 tbtcBalance = balances[0];
                 verseBalance = balances[1];
             }
         }
     }
-
 }
