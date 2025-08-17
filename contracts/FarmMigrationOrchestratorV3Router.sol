@@ -437,24 +437,7 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         return lpTokensReceived;
     }
 
-    /**
-     * @notice Public wrapper for testing add liquidity functionality
-     */
-    function testAddLiquidity(
-        uint256 _verseAmount,
-        uint256 _tbtcAmount,
-        uint256 _exactBptAmountOut
-    )
-        external
-        returns (uint256)
-    {
-        return _addLiquidityViaRouter(
-            _verseAmount,
-            _tbtcAmount,
-            _exactBptAmountOut,
-            block.timestamp + 3600 // Default deadline for internal calls
-        );
-    }
+
 
     /**
      * @notice Public function to add liquidity and stake LP tokens in FarmB
@@ -556,8 +539,6 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         return farmBReceipts;
     }
 
-
-
     /**
      * @notice Get current pool balances
      */
@@ -576,15 +557,20 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         }
     }
 
-
-
-            /**
+    /**
      * @notice Calculate expected LP tokens for given amounts using Balancer V3 Router query
      * @param _verseAmount Amount of VERSE tokens
      * @param _tbtcAmount Amount of tBTC tokens
      * @return expectedLpTokens Expected number of LP tokens to receive
      */
-    function calculateExpectedLpTokens(uint256 _verseAmount, uint256 _tbtcAmount) public view returns (uint256 expectedLpTokens) {
+    function calculateExpectedLpTokens(
+        uint256 _verseAmount,
+        uint256 _tbtcAmount
+    )
+        public
+        view
+        returns (uint256 expectedLpTokens)
+    {
         // Get current pool state
         (uint256 tbtcBalance, uint256 verseBalance) = getPoolBalances();
         uint256 lpTotalSupply = balancerPool.totalSupply();
@@ -602,10 +588,14 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
 
         // Calculate LP tokens based on VERSE proportion (80% of pool)
         // For an 80/20 pool, we calculate based on the VERSE proportion
-        uint256 expectedLpTokensFromVerse = (_verseAmount * lpTotalSupply) / verseBalance;
+        uint256 expectedLpTokensFromVerse = _verseAmount
+            * lpTotalSupply
+            / verseBalance;
 
         // Calculate LP tokens based on tBTC proportion (20% of pool)
-        uint256 expectedLpTokensFromTbtc = (_tbtcAmount * lpTotalSupply) / tbtcBalance;
+        uint256 expectedLpTokensFromTbtc = _tbtcAmount
+            * lpTotalSupply
+            / tbtcBalance;
 
         // Use the smaller of the two to ensure we don't exceed either token's capacity
         expectedLpTokens = expectedLpTokensFromVerse < expectedLpTokensFromTbtc ?
@@ -618,174 +608,19 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         return expectedLpTokens;
     }
 
-    /**
-     * @notice Add liquidity using a single token (VERSE) to get exact LP tokens
-     * @param _exactLpTokensOut Exact amount of LP tokens to receive
-     * @param _maxVerseIn Maximum amount of VERSE willing to spend
-     * @return actualVerseIn Actual amount of VERSE used
-     */
-    function addLiquiditySingle(uint256 _exactLpTokensOut, uint256 _maxVerseIn) external returns (uint256 actualVerseIn) {
-        // Transfer VERSE from user to this contract
-        require(
-            verseToken.transferFrom(msg.sender, address(this), _maxVerseIn),
-            "VERSE transfer failed"
-        );
 
-        console2.log("Adding liquidity single token with exact LP tokens out:", _exactLpTokensOut);
-        console2.log("Max VERSE in:", _maxVerseIn);
-
-        // Approve Permit2 for VERSE
-        verseToken.approve(PERMIT2, type(uint256).max);
-
-        // Give Router permission within Permit2 for VERSE
-        IPermit2(PERMIT2).approve(
-            address(verseToken),
-            address(balancerRouter),
-            uint160(_maxVerseIn),
-            uint48(block.timestamp + 3600)
-        );
-
-        // Call addLiquiditySingleTokenExactOut
-        actualVerseIn = balancerRouter.addLiquiditySingleTokenExactOut(
-            address(balancerPool),
-            verseToken,
-            _maxVerseIn,
-            _exactLpTokensOut,
-            false, // wethIsEth
-            "" // userData
-        );
-
-        console2.log("Actual VERSE used:", actualVerseIn);
-
-        // Transfer LP tokens to user
-        uint256 lpTokensReceived = lpToken.balanceOf(address(this));
-        if (lpTokensReceived > 0) {
-            require(
-                lpToken.transfer(msg.sender, lpTokensReceived),
-                "LP token transfer failed"
-            );
-            console2.log("LP tokens transferred to user:", lpTokensReceived);
-        }
-
-        return actualVerseIn;
-    }
-
-    /**
-     * @notice Calculate the correct amounts of VERSE and tBTC needed for a given LP token amount
-     * @param _desiredLpTokens Amount of LP tokens desired
-     * @return verseAmount Amount of VERSE needed
-     * @return tbtcAmount Amount of tBTC needed
-     */
-    function calculateAmountsForLpTokens(uint256 _desiredLpTokens) public view returns (uint256 verseAmount, uint256 tbtcAmount) {
-        // Get current pool state
-        (uint256 tbtcBalance, uint256 verseBalance) = getPoolBalances();
-        uint256 lpTotalSupply = balancerPool.totalSupply();
-
-        if (lpTotalSupply == 0) {
-            return (0, 0);
-        }
-
-        // Calculate amounts based on current pool proportions
-        // For an 80/20 pool, we need to maintain this ratio
-        verseAmount = (_desiredLpTokens * verseBalance) / lpTotalSupply;
-        tbtcAmount = (_desiredLpTokens * tbtcBalance) / lpTotalSupply;
-
-        console2.log("For", _desiredLpTokens, "LP tokens, need:");
-        console2.log("  VERSE:", verseAmount);
-        console2.log("  tBTC:", tbtcAmount);
-
-        return (verseAmount, tbtcAmount);
-    }
-
-    /**
-     * @notice Add liquidity with exact LP token output using calculated amounts
-     * @param _exactLpTokensOut Exact amount of LP tokens to receive
-     * @param _maxVerseIn Maximum amount of VERSE willing to spend
-     * @param _maxTbtcIn Maximum amount of tBTC willing to spend
-     * @return actualVerseIn Actual amount of VERSE used
-     * @return actualTbtcIn Actual amount of tBTC used
-     */
-    function addLiquidityExactOut(
-        uint256 _exactLpTokensOut,
-        uint256 _maxVerseIn,
-        uint256 _maxTbtcIn
-    )
-        external
-        returns (
-            uint256 actualVerseIn,
-            uint256 actualTbtcIn
-        )
-    {
-        // Calculate the amounts needed for the desired LP tokens
-        (uint256 neededVerse, uint256 neededTbtc) = calculateAmountsForLpTokens(_exactLpTokensOut);
-
-        // Check if we have enough tokens
-        require(neededVerse <= _maxVerseIn, "Insufficient VERSE");
-        require(neededTbtc <= _maxTbtcIn, "Insufficient tBTC");
-
-        // Transfer tokens from user to this contract
-        require(
-            verseToken.transferFrom(msg.sender, address(this), neededVerse),
-            "VERSE transfer failed"
-        );
-        require(
-            tbtcToken.transferFrom(msg.sender, address(this), neededTbtc),
-            "tBTC transfer failed"
-        );
-
-        console2.log("Adding liquidity with exact LP tokens out:", _exactLpTokensOut);
-        console2.log("Using VERSE:", neededVerse);
-        console2.log("Using tBTC:", neededTbtc);
-
-        // Add liquidity using the proportional method
-        _addLiquidityViaRouter(neededVerse, neededTbtc, _exactLpTokensOut, block.timestamp + 3600);
-
-        // Transfer LP tokens to user
-        uint256 lpTokensReceived = lpToken.balanceOf(address(this));
-        if (lpTokensReceived > 0) {
-            require(
-                lpToken.transfer(msg.sender, lpTokensReceived),
-                "LP token transfer failed"
-            );
-            console2.log("LP tokens transferred to user:", lpTokensReceived);
-        }
-
-        return (neededVerse, neededTbtc);
-    }
-
-    /**
-     * @notice Calculate LP tokens from VERSE amount using pool state
-     */
-    function _calculateLpTokensFromVerse(uint256 _verseAmount) internal view returns (uint256) {
-        // Get current pool state
-        (uint256 tbtcBalance, uint256 verseBalance) = getPoolBalances();
-        uint256 lpTotalSupply = balancerPool.totalSupply();
-
-        if (lpTotalSupply == 0 || verseBalance == 0) {
-            return 0;
-        }
-
-        // Calculate LP tokens based on VERSE proportion
-        uint256 expectedLpTokens = (_verseAmount * lpTotalSupply) / verseBalance;
-
-        // Add some buffer for slippage (0.1%)
-        expectedLpTokens = (expectedLpTokens * 999) / 1000;
-
-        return expectedLpTokens;
-    }
 
     /**
      * @notice Execute the complete migration process
      * @param _farmReceiptAmount Amount of SimpleFarmA receipt tokens to migrate
      * @param _verseToSwap Amount of VERSE to swap for tBTC
      * @param _minTbtcOut Minimum tBTC to receive from swap
-     * @param _minLpOut Minimum LP tokens to receive
+     * @param _deadline Transaction deadline
      */
     function executeMigration(
         uint256 _farmReceiptAmount,
         uint256 _verseToSwap,
         uint256 _minTbtcOut,
-        uint256 _minLpOut,
         uint256 _deadline
     )
         external

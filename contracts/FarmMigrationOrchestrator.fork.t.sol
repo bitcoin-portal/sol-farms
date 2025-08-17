@@ -187,7 +187,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
         // Execute migration
         uint256 verseToSwap = receiptBalance / 2; // Swap 50% to tBTC
         uint256 minTbtcOut = 0; // Set to 0 for testing, use proper slippage in production
-        uint256 minLpOut = 0; // Set to 0 for testing
+
 
         console.log("Executing migration concept test...");
         console.log("  Receipt amount:", receiptBalance);
@@ -207,7 +207,6 @@ contract FarmMigrationOrchestratorForkTest is Test {
             receiptBalance,
             verseToSwap,
             minTbtcOut,
-            minLpOut,
             block.timestamp + 3600 // 1 hour deadline
         ) {
             // Get final balances
@@ -275,70 +274,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
 
 
 
-    function testLpTokenStaking() public {
-        // Test that the orchestrator can properly stake LP tokens in FarmB
-        console.log("Testing LP token staking functionality...");
 
-        // Deploy the orchestrator
-        FarmMigrationOrchestratorV3Router orchestratorV3 = new FarmMigrationOrchestratorV3Router(
-            address(simpleFarmA),
-            address(simpleFarmB),
-            VERSE_TOKEN,
-            TBTC_TOKEN,
-            BALANCER_POOL,
-            BALANCER_V3_ROUTER
-        );
-
-        // Check user1's initial FarmB balance
-        uint256 user1InitialFarmB = simpleFarmB.balanceOf(user1);
-        console.log("User1 initial FarmB balance:", user1InitialFarmB);
-
-        // Test the staking functionality by calling the testAddLiquidity function
-        // This will give us real LP tokens to test with
-        uint256 tbtcAmount = 17324590609443; // Exact tBTC amount from successful tx
-        uint256 verseAmount = 105719376787168668206825; // Exact VERSE amount from successful tx
-
-        // Mint tokens to orchestrator
-        deal(address(tbtcToken), address(orchestratorV3), tbtcAmount);
-        deal(address(verseToken), address(orchestratorV3), verseAmount);
-
-        console.log("Minted tokens to orchestrator for testing");
-
-        // Get LP tokens by calling add liquidity
-        uint256 lpTokensReceived = orchestratorV3.testAddLiquidity(verseAmount, tbtcAmount, 0);
-        console.log("LP tokens received from add liquidity:", lpTokensReceived);
-
-        if (lpTokensReceived > 0) {
-            // Now test the staking functionality
-            uint256 initialFarmB = simpleFarmB.balanceOf(address(orchestratorV3));
-            console.log("Initial FarmB balance:", initialFarmB);
-
-            // The orchestrator should stake LP tokens and transfer FarmB receipts to user1
-            // This is what happens in the migration flow
-
-            // Simulate the staking process
-            IERC20(BALANCER_POOL).approve(address(simpleFarmB), lpTokensReceived);
-            simpleFarmB.farmDeposit(lpTokensReceived);
-
-            uint256 farmBBalance = simpleFarmB.balanceOf(address(orchestratorV3));
-            console.log("Orchestrator FarmB balance after staking:", farmBBalance);
-
-            // Transfer FarmB receipts to user1
-            simpleFarmB.transfer(user1, farmBBalance);
-
-            uint256 user1FinalFarmB = simpleFarmB.balanceOf(user1);
-            console.log("User1 final FarmB balance:", user1FinalFarmB);
-            console.log("User1 FarmB gained:", user1FinalFarmB - user1InitialFarmB);
-
-            // Assertions
-            assertGt(user1FinalFarmB, user1InitialFarmB, "User1 should have received FarmB tokens");
-            assertEq(simpleFarmB.balanceOf(address(orchestratorV3)), 0, "Orchestrator should have no FarmB tokens left");
-
-            console.log("LP token staking test passed!");
-        } else {
-            console.log("No LP tokens received, skipping staking test");
-        }
-    }
 
         function testCompleteMigrationFlow() public {
         // Test the complete migration flow to demonstrate it works correctly
@@ -379,7 +315,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
         // Execute migration with the actual amounts from FarmA
         uint256 verseToSwap = initialFarmA / 5; // Swap 20% of FarmA receipts to tBTC
         uint256 minTbtcOut = 0;
-        uint256 minLpOut = 0;
+
 
         console.log("Executing migration with:");
         console.log("  FarmA receipts:", initialFarmA);
@@ -389,7 +325,6 @@ contract FarmMigrationOrchestratorForkTest is Test {
             initialFarmA,
             verseToSwap,
             minTbtcOut,
-            minLpOut,
             block.timestamp + 3600 // 1 hour deadline
         ) {
             // Get final balances
@@ -1113,7 +1048,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
             simpleFarmA.approve(address(orchestratorV3), farmAReceipts);
             
             vm.expectRevert("FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
-            orchestratorV3.executeMigration(farmAReceipts, farmAReceipts / 5, 0, 0, expiredDeadline);
+            orchestratorV3.executeMigration(farmAReceipts, farmAReceipts / 5, 0, expiredDeadline);
             
             console2.log("SUCCESS: executeMigration correctly reverts with expired deadline");
         }
