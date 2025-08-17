@@ -5,6 +5,7 @@ pragma solidity =0.8.26;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import "./FarmMigrationOrchestratorV3Router.sol";
+import "./FarmMigrationOrchestratorV3Executor.sol";
 import "./SimpleFarm.sol";
 import "./DummyToken.sol";
 import "./IPermit2.sol";
@@ -147,11 +148,11 @@ contract FarmMigrationOrchestratorForkTest is Test {
 
     function testFullMigrationOnMainnet() public {
         // This test performs the actual migration using Balancer V3 Router
-        // Import the V3 Router orchestrator
-        FarmMigrationOrchestratorV3Router orchestratorV3;
+        // Import the V3 Router executor
+        FarmMigrationOrchestratorV3Executor executor;
 
-        // Deploy the V3 Router orchestrator with mainnet addresses
-        orchestratorV3 = new FarmMigrationOrchestratorV3Router(
+        // Deploy the V3 Router executor with mainnet addresses
+        executor = new FarmMigrationOrchestratorV3Executor(
             address(simpleFarmA),
             address(simpleFarmB),
             VERSE_TOKEN,
@@ -171,8 +172,8 @@ contract FarmMigrationOrchestratorForkTest is Test {
 
         vm.startPrank(user1);
 
-        // Approve orchestrator to transfer farm receipt tokens
-        simpleFarmA.approve(address(orchestratorV3), receiptBalance);
+        // Approve executor to transfer farm receipt tokens
+        simpleFarmA.approve(address(executor), receiptBalance);
 
         // Get initial balances
         uint256 initialVerse = verseToken.balanceOf(user1);
@@ -203,7 +204,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
         console.log("  4. Stake LP tokens in FarmB");
 
         // Execute the actual migration with V3
-        try orchestratorV3.executeMigration(
+        try executor.executeMigration(
             receiptBalance,
             verseToSwap,
             minTbtcOut,
@@ -238,12 +239,12 @@ contract FarmMigrationOrchestratorForkTest is Test {
             fail();
         }
 
-        // Verify the orchestrator is properly configured
-        assertEq(address(orchestratorV3.balancerPool()), BALANCER_POOL);
-        assertEq(address(orchestratorV3.verseToken()), VERSE_TOKEN);
-        assertEq(address(orchestratorV3.tbtcToken()), TBTC_TOKEN);
+        // Verify the executor is properly configured
+        assertEq(address(executor.balancerPool()), BALANCER_POOL);
+        assertEq(address(executor.verseToken()), VERSE_TOKEN);
+        assertEq(address(executor.tbtcToken()), TBTC_TOKEN);
 
-        console.log("Orchestrator V3 configured correctly for mainnet pool");
+        console.log("Executor V3 configured correctly for mainnet pool");
 
         vm.stopPrank();
     }
@@ -280,8 +281,8 @@ contract FarmMigrationOrchestratorForkTest is Test {
         // Test the complete migration flow to demonstrate it works correctly
         console.log("Testing complete migration flow...");
 
-        // Deploy the orchestrator
-        FarmMigrationOrchestratorV3Router orchestratorV3 = new FarmMigrationOrchestratorV3Router(
+        // Deploy the executor (which inherits from router)
+        FarmMigrationOrchestratorV3Executor executor = new FarmMigrationOrchestratorV3Executor(
             address(simpleFarmA),
             address(simpleFarmB),
             VERSE_TOKEN,
@@ -309,8 +310,8 @@ contract FarmMigrationOrchestratorForkTest is Test {
 
         vm.startPrank(user1);
 
-        // Approve orchestrator to transfer farm receipt tokens
-        simpleFarmA.approve(address(orchestratorV3), initialFarmA);
+        // Approve executor to transfer farm receipt tokens
+        simpleFarmA.approve(address(executor), initialFarmA);
 
         // Execute migration with the actual amounts from FarmA
         uint256 verseToSwap = initialFarmA / 5; // Swap 20% of FarmA receipts to tBTC
@@ -321,7 +322,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
         console.log("  FarmA receipts:", initialFarmA);
         console.log("  VERSE to swap:", verseToSwap);
 
-        try orchestratorV3.executeMigration(
+        try executor.executeMigration(
             initialFarmA,
             verseToSwap,
             minTbtcOut,
@@ -1045,10 +1046,20 @@ contract FarmMigrationOrchestratorForkTest is Test {
         // Test 5: Test executeMigration with expired deadline
         uint256 farmAReceipts = simpleFarmA.balanceOf(user1);
         if (farmAReceipts > 0) {
-            simpleFarmA.approve(address(orchestratorV3), farmAReceipts);
+            // Deploy executor for this test
+            FarmMigrationOrchestratorV3Executor executor = new FarmMigrationOrchestratorV3Executor(
+                address(simpleFarmA),
+                address(simpleFarmB),
+                VERSE_TOKEN,
+                TBTC_TOKEN,
+                BALANCER_POOL,
+                BALANCER_V3_ROUTER
+            );
+            
+            simpleFarmA.approve(address(executor), farmAReceipts);
 
-            vm.expectRevert("FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
-            orchestratorV3.executeMigration(farmAReceipts, farmAReceipts / 5, 0, expiredDeadline);
+            vm.expectRevert("FarmMigrationOrchestratorV3Executor: DEADLINE_EXPIRED");
+            executor.executeMigration(farmAReceipts, farmAReceipts / 5, 0, expiredDeadline);
 
             console2.log("SUCCESS: executeMigration correctly reverts with expired deadline");
         }
