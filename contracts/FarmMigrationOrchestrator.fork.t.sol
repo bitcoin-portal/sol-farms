@@ -929,4 +929,106 @@ contract FarmMigrationOrchestratorForkTest is Test {
 
         console2.log("calculateExpectedLpTokens test passed!");
     }
+
+    function testLiquidityAddedEvent() public {
+        // Test to capture and verify the LiquidityAdded event
+        console2.log("Testing LiquidityAdded event emission...");
+
+        // Deploy the orchestrator
+        FarmMigrationOrchestratorV3Router orchestratorV3 = new FarmMigrationOrchestratorV3Router(
+            address(simpleFarmA),
+            address(simpleFarmB),
+            VERSE_TOKEN,
+            TBTC_TOKEN,
+            BALANCER_POOL,
+            BALANCER_V3_ROUTER
+        );
+
+        // Test amounts
+        uint256 verseAmount = 100 * 1e18; // 100 VERSE
+        uint256 tbtcAmount = 20 * 1e18;   // 20 tBTC
+
+        vm.startPrank(user1);
+
+        // Deal tokens to user1
+        deal(address(verseToken), user1, verseAmount);
+        deal(address(tbtcToken), user1, tbtcAmount);
+
+        // Approve orchestrator to spend tokens
+        verseToken.approve(address(orchestratorV3), verseAmount);
+        tbtcToken.approve(address(orchestratorV3), tbtcAmount);
+
+        console2.log("Calling addLiquidityPublic to trigger LiquidityAdded event...");
+        console2.log("Input amounts:");
+        console2.log("  VERSE:", verseAmount);
+        console2.log("  tBTC:", tbtcAmount);
+
+        // Capture events
+        vm.recordLogs();
+
+        // Call addLiquidityPublic to trigger the event
+        uint256 lpTokensReceived = orchestratorV3.addLiquidityPublic(verseAmount, tbtcAmount, 0);
+
+        // Get the recorded logs
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        console2.log("LP tokens received:", lpTokensReceived);
+
+        // Find the LiquidityAdded event
+        bool eventFound = false;
+        for (uint256 i = 0; i < logs.length; i++) {
+            Vm.Log memory log = logs[i];
+            
+            // Check if this is the LiquidityAdded event
+            // The event signature is: LiquidityAdded(address,uint256,uint256,uint256,uint256)
+            // We'll check for the event topic
+            if (log.topics.length > 0) {
+                bytes32 eventSignature = keccak256("LiquidityAdded(address,uint256,uint256,uint256,uint256)");
+                if (log.topics[0] == eventSignature) {
+                    eventFound = true;
+                    
+                    console2.log("SUCCESS: LiquidityAdded event found!");
+                    console2.log("Event data length:", log.data.length);
+                    
+                    // Decode the event data
+                    // Event parameters: (uint256 verseAmountIn, uint256 tbtcAmountIn, uint256 lpTokensOut, uint256 exactBptAmountOut)
+                    // Note: address user is indexed, so it's in topics[1], not in data
+                    (uint256 eventVerseAmount, uint256 eventTbtcAmount, uint256 eventLpTokens, uint256 eventExactBpt) = abi.decode(
+                        log.data,
+                        (uint256, uint256, uint256, uint256)
+                    );
+                    
+                    // Get the user address from topics[1] (indexed parameter)
+                    address eventUser = address(uint160(uint256(log.topics[1])));
+                    
+                    console2.log("Event decoded values:");
+                    console2.log("  User:", eventUser);
+                    console2.log("  VERSE amount used:", eventVerseAmount);
+                    console2.log("  tBTC amount used:", eventTbtcAmount);
+                    console2.log("  LP tokens received:", eventLpTokens);
+                    console2.log("  Exact BPT requested:", eventExactBpt);
+                    
+                    // Verify the event values
+                    assertEq(eventUser, user1, "Event user should match caller");
+                    assertGt(eventVerseAmount, 0, "VERSE amount should be positive");
+                    assertGt(eventTbtcAmount, 0, "tBTC amount should be positive");
+                    assertGt(eventLpTokens, 0, "LP tokens should be positive");
+                    assertEq(eventLpTokens, lpTokensReceived, "LP tokens in event should match return value");
+                    
+                    // Verify that amounts used are less than or equal to input amounts
+                    assertLe(eventVerseAmount, verseAmount, "VERSE amount used should not exceed input");
+                    assertLe(eventTbtcAmount, tbtcAmount, "tBTC amount used should not exceed input");
+                    
+                    console2.log("SUCCESS: All event assertions passed!");
+                    break;
+                }
+            }
+        }
+        
+        assertTrue(eventFound, "LiquidityAdded event should be emitted");
+        
+        console2.log("LiquidityAdded event test passed!");
+
+        vm.stopPrank();
+    }
 }

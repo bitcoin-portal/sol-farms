@@ -67,6 +67,14 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         address indexed newOwner
     );
 
+    event LiquidityAdded(
+        address indexed user,
+        uint256 verseAmountIn,
+        uint256 tbtcAmountIn,
+        uint256 lpTokensOut,
+        uint256 exactBptAmountOut
+    );
+
     modifier onlyOwner() {
         require(
             msg.sender == owner,
@@ -219,6 +227,34 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         // Check the actual LP token balance we received
         uint256 bptAmountOut = lpToken.balanceOf(
             address(this)
+        );
+
+        // Determine the actual amounts used for each token based on pool token order
+        uint256 actualVerseAmount;
+        uint256 actualTbtcAmount;
+
+        if (poolTokens[0] == address(verseToken)) {
+            // VERSE is first in pool, tBTC is second
+            actualVerseAmount = amountsIn[0];
+            actualTbtcAmount = amountsIn[1];
+        } else {
+            // tBTC is first in pool, VERSE is second
+            actualVerseAmount = amountsIn[1];
+            actualTbtcAmount = amountsIn[0];
+        }
+
+        console2.log("Actual amounts used for liquidity:");
+        console2.log("  VERSE used:", actualVerseAmount);
+        console2.log("  tBTC used:", actualTbtcAmount);
+        console2.log("  LP tokens received:", bptAmountOut);
+
+        // Emit event with the actual amounts used and LP tokens received
+        emit LiquidityAdded(
+            msg.sender,
+            actualVerseAmount,
+            actualTbtcAmount,
+            bptAmountOut,
+            _exactBptAmountOut
         );
 
         return bptAmountOut;
