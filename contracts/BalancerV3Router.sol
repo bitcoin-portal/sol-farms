@@ -6,7 +6,7 @@ import "./IERC20.sol";
 // Balancer V3 Router Interface
 // Based on the actual V3 Router deployed at 0xAE563E3f8219521950555F5962419C8919758Ea2
 interface IBalancerV3Router {
-    
+
     // Request structs
     struct AddLiquidityProportionalRequest {
         address pool;
@@ -32,7 +32,7 @@ interface IBalancerV3Router {
         address recipient;
         bytes userData;
     }
-    
+
     // Swap function for single token exact in
     function swapSingleTokenExactIn(
         address pool,
@@ -44,7 +44,7 @@ interface IBalancerV3Router {
         bool wethIsEth,
         bytes calldata userData
     ) external payable returns (uint256 amountOut);
-    
+
     // Add liquidity unbalanced (for adding liquidity with custom amounts)
     function addLiquidityUnbalanced(
         address pool,
@@ -53,7 +53,7 @@ interface IBalancerV3Router {
         bool wethIsEth,
         bytes calldata userData
     ) external payable returns (uint256 bptAmountOut);
-    
+
     // Add liquidity proportional
     function addLiquidityProportional(
         address pool,
@@ -62,7 +62,7 @@ interface IBalancerV3Router {
         bool wethIsEth,
         bytes calldata userData
     ) external payable returns (uint256[] memory amountsIn);
-    
+
     // Add liquidity single token exact out
     function addLiquiditySingleTokenExactOut(
         address pool,
@@ -72,7 +72,7 @@ interface IBalancerV3Router {
         bool wethIsEth,
         bytes calldata userData
     ) external payable returns (uint256 amountIn);
-    
+
     // --- Query functions (staticcall) ---
     function queryAddLiquidityProportional(
         AddLiquidityProportionalRequest calldata req
@@ -85,7 +85,7 @@ interface IBalancerV3Router {
     function queryAddLiquiditySingleTokenExactIn(
         AddLiquiditySingleTokenExactInRequest calldata req
     ) external view returns (uint256 bptAmountOut);
-    
+
     // Legacy query functions (keeping for backward compatibility)
     function querySwapSingleTokenExactIn(
         address pool,
@@ -95,14 +95,14 @@ interface IBalancerV3Router {
         address sender,
         bytes calldata userData
     ) external returns (uint256 amountOut);
-    
+
     function queryAddLiquidityUnbalanced(
         address pool,
         uint256[] memory exactAmountsIn,
         address sender,
         bytes calldata userData
     ) external returns (uint256 bptAmountOut);
-    
+
     // Query add liquidity proportional
     function queryAddLiquidityProportional(
         address pool,

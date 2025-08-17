@@ -166,8 +166,15 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         returns (uint256)
     {
         // Always approve Permit2 with max amounts
-        verseToken.approve(PERMIT2, type(uint256).max);
-        tbtcToken.approve(PERMIT2, type(uint256).max);
+        verseToken.approve(
+            PERMIT2,
+            type(uint256).max
+        );
+
+        tbtcToken.approve(
+            PERMIT2,
+            type(uint256).max
+        );
 
         // Give Router permission within Permit2 for both tokens
         IPermit2(PERMIT2).approve(
@@ -341,9 +348,22 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         );
 
         // Add liquidity with specified exactBptAmountOut or auto-calculate if 0
-        uint256 exactBptAmountOut = _exactBptAmountOut == 0 ?
-            calculateExpectedLpTokens(_verseAmount, _tbtcAmount) : _exactBptAmountOut;
-        uint256 lpTokensReceived = _addLiquidityViaRouter(_verseAmount, _tbtcAmount, exactBptAmountOut);
+        uint256 exactBptAmountOut = _exactBptAmountOut == 0
+            ? calculateExpectedLpTokens(_verseAmount, _tbtcAmount)
+            : _exactBptAmountOut;
+
+        uint256 lpTokensReceived = _addLiquidityViaRouter(
+            _verseAmount,
+            _tbtcAmount,
+            exactBptAmountOut
+        );
+
+        // Check orchestrator balances after liquidity addition
+        uint256 orchestratorVerseBalance = verseToken.balanceOf(address(this));
+        uint256 orchestratorTbtcBalance = tbtcToken.balanceOf(address(this));
+        console2.log("Orchestrator balances after liquidity addition:");
+        console2.log("  VERSE remaining:", orchestratorVerseBalance);
+        console2.log("  tBTC remaining:", orchestratorTbtcBalance);
 
         // Transfer LP tokens back to user
         if (lpTokensReceived > 0) {
@@ -353,14 +373,42 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             );
         }
 
+        // Return any remaining tokens to user
+        if (orchestratorVerseBalance > 0) {
+            console2.log("Returning remaining VERSE to user:", orchestratorVerseBalance);
+            require(
+                verseToken.transfer(msg.sender, orchestratorVerseBalance),
+                "VERSE return transfer failed"
+            );
+        }
+
+        if (orchestratorTbtcBalance > 0) {
+            console2.log("Returning remaining tBTC to user:", orchestratorTbtcBalance);
+            require(
+                tbtcToken.transfer(msg.sender, orchestratorTbtcBalance),
+                "tBTC return transfer failed"
+            );
+        }
+
         return lpTokensReceived;
     }
 
     /**
      * @notice Public wrapper for testing add liquidity functionality
      */
-    function testAddLiquidity(uint256 _verseAmount, uint256 _tbtcAmount, uint256 _exactBptAmountOut) external returns (uint256) {
-        return _addLiquidityViaRouter(_verseAmount, _tbtcAmount, _exactBptAmountOut);
+    function testAddLiquidity(
+        uint256 _verseAmount,
+        uint256 _tbtcAmount,
+        uint256 _exactBptAmountOut
+    )
+        external
+        returns (uint256)
+    {
+        return _addLiquidityViaRouter(
+            _verseAmount,
+            _tbtcAmount,
+            _exactBptAmountOut
+        );
     }
 
     /**
@@ -409,6 +457,13 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
 
         console2.log("LP tokens received from addLiquidity:", lpTokensReceived);
 
+        // Check orchestrator balances after liquidity addition
+        uint256 orchestratorVerseBalance = verseToken.balanceOf(address(this));
+        uint256 orchestratorTbtcBalance = tbtcToken.balanceOf(address(this));
+        console2.log("Orchestrator balances after liquidity addition:");
+        console2.log("  VERSE remaining:", orchestratorVerseBalance);
+        console2.log("  tBTC remaining:", orchestratorTbtcBalance);
+
         // Stake LP tokens in FarmB if we received any
         if (lpTokensReceived > 0) {
             // Approve FarmB to spend LP tokens
@@ -431,71 +486,27 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             }
         }
 
+        // Return any remaining tokens to user
+        if (orchestratorVerseBalance > 0) {
+            console2.log("Returning remaining VERSE to user:", orchestratorVerseBalance);
+            require(
+                verseToken.transfer(msg.sender, orchestratorVerseBalance),
+                "VERSE return transfer failed"
+            );
+        }
+
+        if (orchestratorTbtcBalance > 0) {
+            console2.log("Returning remaining tBTC to user:", orchestratorTbtcBalance);
+            require(
+                tbtcToken.transfer(msg.sender, orchestratorTbtcBalance),
+                "tBTC return transfer failed"
+            );
+        }
+
         return farmBReceipts;
     }
 
-    /**
-     * @notice Get swap quote for VERSE to tBTC
-     */
-    function getSwapQuote(uint256 _verseAmount) internal returns (uint256) {
-        try IBalancerV3Router(balancerRouter).querySwapSingleTokenExactIn(
-            address(balancerPool),
-            verseToken,
-            tbtcToken,
-            _verseAmount,
-            address(this),
-            ""
-        ) returns (uint256 amountOut) {
-            console2.log("Swap quote successful, amountOut:", amountOut);
-            return amountOut;
-        } catch (bytes memory reason) {
-            console2.log("Swap quote failed with reason:");
-            console2.logBytes(reason);
-            return 0;
-        }
-    }
 
-    /**
-     * @notice Get quote for LP tokens from Balancer V3 Router
-     */
-    function getLpQuote(uint256 _verseAmount, uint256 _tbtcAmount) internal returns (uint256) {
-        // Get pool tokens to determine correct order
-        address[] memory poolTokens = balancerPool.getTokens();
-        console2.log("Pool tokens[0]:", poolTokens[0]);
-        console2.log("Pool tokens[1]:", poolTokens[1]);
-        console2.log("VERSE token:", address(verseToken));
-        console2.log("tBTC token:", address(tbtcToken));
-
-        // Use the router's queryAddLiquidityUnbalanced function to get accurate quote
-        uint256[] memory exactAmountsIn = new uint256[](2);
-
-        // Determine correct token order based on pool
-        if (poolTokens[0] == address(verseToken)) {
-            exactAmountsIn[0] = _verseAmount;  // VERSE first
-            exactAmountsIn[1] = _tbtcAmount;   // tBTC second
-        } else {
-            exactAmountsIn[0] = _tbtcAmount;   // tBTC first
-            exactAmountsIn[1] = _verseAmount;  // VERSE second
-        }
-
-        try IBalancerV3Router(balancerRouter).queryAddLiquidityUnbalanced(
-            address(balancerPool),
-            exactAmountsIn,
-            address(this),
-            ""
-        ) returns (uint256 bptAmountOut) {
-            console2.log("LP quote successful, bptAmountOut:", bptAmountOut);
-            return bptAmountOut;
-        } catch (bytes memory reason) {
-            console2.log("LP quote failed with reason:");
-            console2.logBytes(reason);
-            // Fallback to simplified calculation if query fails
-            (uint256 tbtcBalance, uint256 verseBalance) = getPoolBalances();
-            uint256 bptRate = getBptRate();
-            uint256 totalValue = (_verseAmount * verseBalance) + (_tbtcAmount * tbtcBalance);
-            return totalValue / bptRate;
-        }
-    }
 
     /**
      * @notice Get current pool balances
@@ -515,19 +526,7 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         }
     }
 
-    /**
-     * @notice Get BPT rate from vault
-     */
-    function getBptRate() public view returns (uint256) {
-        // Call getBptRate on the vault
-        bytes memory data = abi.encodeWithSignature("getBptRate(address)", address(balancerPool));
-        (bool success, bytes memory result) = BALANCER_VAULT.staticcall(data);
 
-        if (success && result.length >= 32) {
-            return abi.decode(result, (uint256));
-        }
-        return 0;
-    }
 
             /**
      * @notice Calculate expected LP tokens for given amounts using Balancer V3 Router query
