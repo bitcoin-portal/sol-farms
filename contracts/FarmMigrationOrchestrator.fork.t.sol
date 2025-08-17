@@ -1065,7 +1065,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
         
         simpleFarmA.approve(address(executor), farmAReceipts);
 
-        vm.expectRevert("FarmMigrationOrchestratorV3Executor: DEADLINE_EXPIRED");
+        vm.expectRevert("DEADLINE_EXPIRED");
         executor.executeMigration(farmAReceipts, farmAReceipts / 5, 0, expiredDeadline);
 
         console2.log("SUCCESS: executeMigration correctly reverts with expired deadline");
