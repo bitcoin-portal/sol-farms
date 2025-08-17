@@ -52,6 +52,26 @@ contract SafeERC20 {
         );
     }
 
+    /**
+     * @dev Allows to execute approve for a token
+     */
+    function safeApprove(
+        IERC20 _token,
+        address _spender,
+        uint256 _value
+    )
+        internal
+    {
+        _callOptionalReturn(
+            _token,
+            abi.encodeWithSelector(
+                _token.approve.selector,
+                _spender,
+                _value
+            )
+        );
+    }
+
     function _callOptionalReturn(
         IERC20 _token,
         bytes memory _data

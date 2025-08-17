@@ -163,6 +163,50 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
     }
 
     /**
+     * @notice Swap tBTC tokens to VERSE via Balancer V3 Router
+     * @param _tbtcAmount Amount of tBTC tokens to swap
+     * @param _minVerseOut Minimum amount of VERSE to receive
+     * @param _deadline Transaction deadline
+     * @return amountOut Amount of VERSE received
+     */
+    function _swapTbtcToVerseViaRouter(
+        uint256 _tbtcAmount,
+        uint256 _minVerseOut,
+        uint256 _deadline
+    )
+        internal
+        returns (uint256)
+    {
+        // Always approve Permit2 with max amount to avoid allowance issues
+        tbtcToken.approve(
+            PERMIT2,
+            type(uint256).max
+        );
+
+        // Give Router permission within Permit2
+        IPermit2(PERMIT2).approve(
+            address(tbtcToken),
+            address(balancerRouter),
+            uint160(_tbtcAmount),
+            uint48(_deadline)
+        );
+
+        // Execute swap using swapSingleTokenExactIn
+        uint256 amountOut = balancerRouter.swapSingleTokenExactIn(
+            address(balancerPool),
+            tbtcToken,
+            verseToken,
+            _tbtcAmount,
+            _minVerseOut,
+            _deadline,
+            false, // wethIsEth
+            "" // userData
+        );
+
+        return amountOut;
+    }
+
+    /**
      * @notice Add liquidity to Balancer pool using Router with proportional amounts
      * @dev Uses addLiquidityProportional with calculated exactBptAmountOut
      */
@@ -437,8 +481,6 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         return lpTokensReceived;
     }
 
-
-
     /**
      * @notice Public function to add liquidity and stake LP tokens in FarmB
      * @dev Users must have VERSE and tBTC tokens approved to this contract
@@ -540,6 +582,151 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
     }
 
     /**
+     * @notice Universal ZAP function: Add liquidity and stake using either VERSE or tBTC tokens
+     * @dev Automatically swaps the necessary amount to maintain 80/20 ratio, then adds liquidity and stakes
+     * @param _tokenIn Address of the input token (VERSE or tBTC)
+     * @param _amountIn Amount of input tokens to use
+     * @param _slippageBps Slippage tolerance in basis points (e.g., 1000 = 10%)
+     * @param _deadline Transaction deadline
+     * @return farmBReceipts Amount of FarmB receipt tokens received
+     */
+    function zapToFarmB(
+        address _tokenIn,
+        uint256 _amountIn,
+        uint256 _slippageBps,
+        uint256 _deadline
+    )
+        external
+        returns (uint256 farmBReceipts)
+    {
+        // Validate deadline
+        require(block.timestamp <= _deadline, "FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
+
+        // Validate input token
+        require(
+            _tokenIn == address(verseToken) || _tokenIn == address(tbtcToken),
+            "Invalid input token - must be VERSE or tBTC"
+        );
+
+        bool isVerseInput = _tokenIn == address(verseToken);
+        IERC20 tokenIn = IERC20(_tokenIn);
+
+        // Transfer tokens from user to this contract
+        require(
+            tokenIn.transferFrom(msg.sender, address(this), _amountIn),
+            "Token transfer failed"
+        );
+
+        console2.log("ZAP: Received", _amountIn, isVerseInput ? "VERSE" : "tBTC", "tokens");
+
+        uint256 verseForLiquidity;
+        uint256 tbtcForLiquidity;
+
+        if (isVerseInput) {
+            // VERSE input: swap 20% to tBTC for 80/20 ratio
+            uint256 verseToSwap = (_amountIn * 20) / 100; // 20% of VERSE
+            verseForLiquidity = _amountIn - verseToSwap; // 80% of VERSE
+
+            console2.log("ZAP: Swapping", verseToSwap, "VERSE to tBTC");
+            console2.log("ZAP: Using", verseForLiquidity, "VERSE for liquidity");
+
+            // Swap VERSE to tBTC
+            tbtcForLiquidity = _swapVerseToTbtcViaRouter(
+                verseToSwap,
+                0, // minTbtcOut - no minimum for ZAP
+                _deadline
+            );
+
+            console2.log("ZAP: Received", tbtcForLiquidity, "tBTC from swap");
+                } else {
+            // tBTC input: swap 80% to VERSE for 80/20 ratio
+            uint256 tbtcToSwap = (_amountIn * 80) / 100; // 80% of tBTC
+            tbtcForLiquidity = _amountIn - tbtcToSwap; // 20% of tBTC
+
+            console2.log("ZAP: Swapping", tbtcToSwap, "tBTC to VERSE");
+            console2.log("ZAP: Using", tbtcForLiquidity, "tBTC for liquidity");
+
+            // Swap tBTC to VERSE using the proper swap function
+            verseForLiquidity = _swapTbtcToVerseViaRouter(
+                tbtcToSwap,
+                0, // minVerseOut - no minimum for ZAP
+                _deadline
+            );
+
+            console2.log("ZAP: Received", verseForLiquidity, "VERSE from swap");
+        }
+
+        // Calculate expected LP tokens for the liquidity addition
+        uint256 exactBptAmountOut = calculateExpectedLpTokens(
+            verseForLiquidity,
+            tbtcForLiquidity
+        );
+
+        // Apply slippage tolerance
+        uint256 slippageAdjustedBpt = (exactBptAmountOut * (10000 - _slippageBps)) / 10000;
+        console2.log("ZAP: Original exactBptAmountOut:", exactBptAmountOut);
+        console2.log("ZAP: Slippage adjusted BPT:", slippageAdjustedBpt);
+
+        // Add liquidity using the proportional method
+        uint256 lpTokensReceived = _addLiquidityViaRouter(
+            verseForLiquidity,
+            tbtcForLiquidity,
+            slippageAdjustedBpt,
+            _deadline
+        );
+
+        console2.log("ZAP: LP tokens received from addLiquidity:", lpTokensReceived);
+
+        // Check orchestrator balances after liquidity addition
+        uint256 orchestratorVerseBalance = verseToken.balanceOf(address(this));
+        uint256 orchestratorTbtcBalance = tbtcToken.balanceOf(address(this));
+        console2.log("ZAP: Orchestrator balances after liquidity addition:");
+        console2.log("  VERSE remaining:", orchestratorVerseBalance);
+        console2.log("  tBTC remaining:", orchestratorTbtcBalance);
+
+        // Stake LP tokens in FarmB if we received any
+        if (lpTokensReceived > 0) {
+            // Approve FarmB to spend LP tokens
+            lpToken.approve(address(simpleFarmB), lpTokensReceived);
+
+            // Stake LP tokens in FarmB
+            simpleFarmB.farmDeposit(lpTokensReceived);
+
+            // Get FarmB receipt tokens
+            farmBReceipts = simpleFarmB.balanceOf(address(this));
+
+            console2.log("ZAP: FarmB receipt tokens received:", farmBReceipts);
+
+            // Transfer FarmB receipt tokens to user
+            if (farmBReceipts > 0) {
+                require(
+                    simpleFarmB.transfer(msg.sender, farmBReceipts),
+                    "FarmB receipt transfer failed"
+                );
+            }
+        }
+
+        // Return any remaining tokens to user
+        if (orchestratorVerseBalance > 0) {
+            console2.log("ZAP: Returning remaining VERSE to user:", orchestratorVerseBalance);
+            require(
+                verseToken.transfer(msg.sender, orchestratorVerseBalance),
+                "VERSE return transfer failed"
+            );
+        }
+
+        if (orchestratorTbtcBalance > 0) {
+            console2.log("ZAP: Returning remaining tBTC to user:", orchestratorTbtcBalance);
+            require(
+                tbtcToken.transfer(msg.sender, orchestratorTbtcBalance),
+                "tBTC return transfer failed"
+            );
+        }
+
+        return farmBReceipts;
+    }
+
+    /**
      * @notice Get current pool balances
      */
     function getPoolBalances() public view returns (uint256 tbtcBalance, uint256 verseBalance) {
@@ -571,14 +758,14 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         view
         returns (uint256 expectedLpTokens)
     {
+        // Use manual calculation - router query is not suitable for our use case
+        // Router query tells us "how much tokens needed for X LP tokens"
+        // But we want "how much LP tokens for X token amounts"
+        console2.log("Using manual calculation for LP token estimation");
+
         // Get current pool state
         (uint256 tbtcBalance, uint256 verseBalance) = getPoolBalances();
         uint256 lpTotalSupply = balancerPool.totalSupply();
-
-        console2.log("Pool state:");
-        console2.log("  tBTC balance:", tbtcBalance);
-        console2.log("  VERSE balance:", verseBalance);
-        console2.log("  LP total supply:", lpTotalSupply);
 
         if (lpTotalSupply == 0 || verseBalance == 0) {
             expectedLpTokens = 1 * 1e18; // Fallback to 1 LP token
@@ -587,7 +774,6 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
         }
 
         // Calculate LP tokens based on VERSE proportion (80% of pool)
-        // For an 80/20 pool, we calculate based on the VERSE proportion
         uint256 expectedLpTokensFromVerse = _verseAmount
             * lpTotalSupply
             / verseBalance;
@@ -598,17 +784,16 @@ contract FarmMigrationOrchestratorV3Router is SafeERC20 {
             / tbtcBalance;
 
         // Use the smaller of the two to ensure we don't exceed either token's capacity
-        expectedLpTokens = expectedLpTokensFromVerse < expectedLpTokensFromTbtc ?
-            expectedLpTokensFromVerse : expectedLpTokensFromTbtc;
+        expectedLpTokens = expectedLpTokensFromVerse < expectedLpTokensFromTbtc
+            ? expectedLpTokensFromVerse
+            : expectedLpTokensFromTbtc;
 
-        console2.log("Calculated LP tokens from VERSE:", expectedLpTokensFromVerse);
-        console2.log("Calculated LP tokens from tBTC:", expectedLpTokensFromTbtc);
-        console2.log("Using smaller value:", expectedLpTokens);
+        console2.log("Manual calculation - LP tokens from VERSE:", expectedLpTokensFromVerse);
+        console2.log("Manual calculation - LP tokens from tBTC:", expectedLpTokensFromTbtc);
+        console2.log("Manual calculation - using smaller value:", expectedLpTokens);
 
         return expectedLpTokens;
     }
-
-
 
     /**
      * @notice Execute the complete migration process

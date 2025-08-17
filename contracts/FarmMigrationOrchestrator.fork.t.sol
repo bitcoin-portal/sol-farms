@@ -915,7 +915,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
         bool eventFound = false;
         for (uint256 i = 0; i < logs.length; i++) {
             Vm.Log memory log = logs[i];
-            
+
             // Check if this is the LiquidityAdded event
             // The event signature is: LiquidityAdded(address,uint256,uint256,uint256,uint256)
             // We'll check for the event topic
@@ -923,10 +923,10 @@ contract FarmMigrationOrchestratorForkTest is Test {
                 bytes32 eventSignature = keccak256("LiquidityAdded(address,uint256,uint256,uint256,uint256)");
                 if (log.topics[0] == eventSignature) {
                     eventFound = true;
-                    
+
                     console2.log("SUCCESS: LiquidityAdded event found!");
                     console2.log("Event data length:", log.data.length);
-                    
+
                     // Decode the event data
                     // Event parameters: (uint256 verseAmountIn, uint256 tbtcAmountIn, uint256 lpTokensOut, uint256 exactBptAmountOut)
                     // Note: address user is indexed, so it's in topics[1], not in data
@@ -934,36 +934,36 @@ contract FarmMigrationOrchestratorForkTest is Test {
                         log.data,
                         (uint256, uint256, uint256, uint256)
                     );
-                    
+
                     // Get the user address from topics[1] (indexed parameter)
                     address eventUser = address(uint160(uint256(log.topics[1])));
-                    
+
                     console2.log("Event decoded values:");
                     console2.log("  User:", eventUser);
                     console2.log("  VERSE amount used:", eventVerseAmount);
                     console2.log("  tBTC amount used:", eventTbtcAmount);
                     console2.log("  LP tokens received:", eventLpTokens);
                     console2.log("  Exact BPT requested:", eventExactBpt);
-                    
+
                     // Verify the event values
                     assertEq(eventUser, user1, "Event user should match caller");
                     assertGt(eventVerseAmount, 0, "VERSE amount should be positive");
                     assertGt(eventTbtcAmount, 0, "tBTC amount should be positive");
                     assertGt(eventLpTokens, 0, "LP tokens should be positive");
                     assertEq(eventLpTokens, lpTokensReceived, "LP tokens in event should match return value");
-                    
+
                     // Verify that amounts used are less than or equal to input amounts
                     assertLe(eventVerseAmount, verseAmount, "VERSE amount used should not exceed input");
                     assertLe(eventTbtcAmount, tbtcAmount, "tBTC amount used should not exceed input");
-                    
+
                     console2.log("SUCCESS: All event assertions passed!");
                     break;
                 }
             }
         }
-        
+
         assertTrue(eventFound, "LiquidityAdded event should be emitted");
-        
+
         console2.log("LiquidityAdded event test passed!");
 
         vm.stopPrank();
@@ -999,22 +999,22 @@ contract FarmMigrationOrchestratorForkTest is Test {
 
         // Test 1: Call with expired deadline (should revert)
         uint256 expiredDeadline = block.timestamp - 3600; // 1 hour in the past
-        
+
         console2.log("Testing with expired deadline:", expiredDeadline);
         console2.log("Current block timestamp:", block.timestamp);
-        
+
         vm.expectRevert("FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
         orchestratorV3.addLiquidityPublic(verseAmount, tbtcAmount, 0, expiredDeadline);
-        
+
         console2.log("SUCCESS: addLiquidityPublic correctly reverts with expired deadline");
 
         // Test 2: Call with valid deadline (should succeed)
         uint256 validDeadline = block.timestamp + 3600; // 1 hour in the future
-        
+
         console2.log("Testing with valid deadline:", validDeadline);
-        
+
         uint256 lpTokensReceived = orchestratorV3.addLiquidityPublic(verseAmount, tbtcAmount, 0, validDeadline);
-        
+
         console2.log("SUCCESS: addLiquidityPublic succeeds with valid deadline");
         console2.log("LP tokens received:", lpTokensReceived);
         assertGt(lpTokensReceived, 0, "Should receive LP tokens with valid deadline");
@@ -1024,10 +1024,10 @@ contract FarmMigrationOrchestratorForkTest is Test {
         deal(address(tbtcToken), user1, tbtcAmount);
         verseToken.approve(address(orchestratorV3), verseAmount);
         tbtcToken.approve(address(orchestratorV3), tbtcAmount);
-        
+
         vm.expectRevert("FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
         orchestratorV3.addLiquidityAndStake(verseAmount, tbtcAmount, 0, expiredDeadline);
-        
+
         console2.log("SUCCESS: addLiquidityAndStake correctly reverts with expired deadline");
 
         // Test 4: Test addLiquidityAndStake with valid deadline
@@ -1035,9 +1035,9 @@ contract FarmMigrationOrchestratorForkTest is Test {
         deal(address(tbtcToken), user1, tbtcAmount);
         verseToken.approve(address(orchestratorV3), verseAmount);
         tbtcToken.approve(address(orchestratorV3), tbtcAmount);
-        
+
         uint256 farmBReceipts = orchestratorV3.addLiquidityAndStake(verseAmount, tbtcAmount, 0, validDeadline);
-        
+
         console2.log("SUCCESS: addLiquidityAndStake succeeds with valid deadline");
         console2.log("FarmB receipts received:", farmBReceipts);
         assertGt(farmBReceipts, 0, "Should receive FarmB receipts with valid deadline");
@@ -1046,14 +1046,136 @@ contract FarmMigrationOrchestratorForkTest is Test {
         uint256 farmAReceipts = simpleFarmA.balanceOf(user1);
         if (farmAReceipts > 0) {
             simpleFarmA.approve(address(orchestratorV3), farmAReceipts);
-            
+
             vm.expectRevert("FarmMigrationOrchestratorV3Router: DEADLINE_EXPIRED");
             orchestratorV3.executeMigration(farmAReceipts, farmAReceipts / 5, 0, expiredDeadline);
-            
+
             console2.log("SUCCESS: executeMigration correctly reverts with expired deadline");
         }
 
         console2.log("All deadline validation tests passed!");
+
+        vm.stopPrank();
+    }
+
+    function testZapToFarmB() public {
+        // Test the universal ZAP function with VERSE input
+        console2.log("Testing universal ZAP function with VERSE...");
+
+        // Deploy the orchestrator
+        FarmMigrationOrchestratorV3Router orchestratorV3 = new FarmMigrationOrchestratorV3Router(
+            address(simpleFarmA),
+            address(simpleFarmB),
+            VERSE_TOKEN,
+            TBTC_TOKEN,
+            BALANCER_POOL,
+            BALANCER_V3_ROUTER
+        );
+
+        // Give user1 some VERSE tokens for testing
+        uint256 verseAmount = 1000 * 1e18; // 1000 VERSE
+        deal(address(verseToken), user1, verseAmount);
+
+        vm.startPrank(user1);
+
+        // Check initial balances
+        uint256 initialVerse = verseToken.balanceOf(user1);
+        uint256 initialFarmB = simpleFarmB.balanceOf(user1);
+
+        console2.log("Initial balances:");
+        console2.log("  VERSE:", initialVerse);
+        console2.log("  FarmB receipts:", initialFarmB);
+
+        // Approve orchestrator to spend VERSE tokens
+        verseToken.approve(address(orchestratorV3), verseAmount);
+
+        // Call the ZAP function with VERSE
+        uint256 farmBReceipts = orchestratorV3.zapToFarmB(
+            address(verseToken),
+            verseAmount,
+            1000, // 10% slippage
+            block.timestamp + 3600 // 1 hour deadline
+        );
+
+        // Check final balances
+        uint256 finalVerse = verseToken.balanceOf(user1);
+        uint256 finalFarmB = simpleFarmB.balanceOf(user1);
+
+        console2.log("Final balances after VERSE ZAP:");
+        console2.log("  VERSE:", finalVerse);
+        console2.log("  FarmB receipts:", finalFarmB);
+
+        console2.log("Changes:");
+        console2.log("  VERSE used:", initialVerse - finalVerse);
+        console2.log("  FarmB receipts gained:", finalFarmB - initialFarmB);
+
+        // Assertions for VERSE ZAP
+        assertGt(farmBReceipts, 0, "Should receive FarmB receipt tokens from VERSE ZAP");
+        assertGt(finalFarmB, initialFarmB, "User should have more FarmB receipts");
+        assertLt(finalVerse, initialVerse, "User should have less VERSE (used for ZAP)");
+
+        console2.log("VERSE ZAP test passed!");
+
+        vm.stopPrank();
+    }
+
+    function testZapToFarmBWithTbtc() public {
+        // Test the universal ZAP function with tBTC input
+        console2.log("Testing universal ZAP function with tBTC...");
+
+        // Deploy the orchestrator
+        FarmMigrationOrchestratorV3Router orchestratorV3 = new FarmMigrationOrchestratorV3Router(
+            address(simpleFarmA),
+            address(simpleFarmB),
+            VERSE_TOKEN,
+            TBTC_TOKEN,
+            BALANCER_POOL,
+            BALANCER_V3_ROUTER
+        );
+
+        // Give user1 some tBTC tokens for testing
+        uint256 tbtcAmount = 1000000000; // 1 tBTC (large amount to ensure it works with the pool)
+        deal(address(tbtcToken), user1, tbtcAmount);
+
+        vm.startPrank(user1);
+
+        // Check initial balances
+        uint256 initialTbtc = tbtcToken.balanceOf(user1);
+        uint256 initialFarmB = simpleFarmB.balanceOf(user1);
+
+        console2.log("Initial balances:");
+        console2.log("  tBTC:", initialTbtc);
+        console2.log("  FarmB receipts:", initialFarmB);
+
+        // Approve orchestrator to spend tBTC tokens
+        tbtcToken.approve(address(orchestratorV3), tbtcAmount);
+
+        // Call the ZAP function with tBTC
+        uint256 farmBReceipts = orchestratorV3.zapToFarmB(
+            address(tbtcToken),
+            tbtcAmount,
+            1000, // 10% slippage
+            block.timestamp + 3600 // 1 hour deadline
+        );
+
+        // Check final balances
+        uint256 finalTbtc = tbtcToken.balanceOf(user1);
+        uint256 finalFarmB = simpleFarmB.balanceOf(user1);
+
+        console2.log("Final balances after tBTC ZAP:");
+        console2.log("  tBTC:", finalTbtc);
+        console2.log("  FarmB receipts:", finalFarmB);
+
+        console2.log("Changes:");
+        console2.log("  tBTC used:", initialTbtc - finalTbtc);
+        console2.log("  FarmB receipts gained:", finalFarmB - initialFarmB);
+
+        // Assertions for tBTC ZAP
+        assertGt(farmBReceipts, 0, "Should receive FarmB receipt tokens from tBTC ZAP");
+        assertGt(finalFarmB, initialFarmB, "User should have more FarmB receipts");
+        assertLt(finalTbtc, initialTbtc, "User should have less tBTC (used for ZAP)");
+
+        console2.log("tBTC ZAP test passed!");
 
         vm.stopPrank();
     }
