@@ -201,14 +201,18 @@ forge script contracts/Scripts/DeployMigrationOrchestrator.s.sol \
 ```
 
 ### Environment Variables Required
-Make sure to set these environment variables before deployment:
+Make sure to set this environment variable before deployment:
 ```bash
 export PRIVATE_KEY="your_private_key"
-export SIMPLE_FARM_A="0x..."
-export SIMPLE_FARM_B="0x..."
-export VERSE_TOKEN="0x..."
-export TBTC_TOKEN="0x..."
 ```
+
+**Note:** All contract addresses are hardcoded in the deployment script:
+- Farm A: `0x4630cDE3E9B734b63993db4304D0B383e914C552`
+- Farm B: `0x1b69e6a995dEfff515c44592bF220bd123812eC4`
+- VERSE Token: `0x249cA82617eC3DfB2589c4c17ab7EC9765350a18`
+- tBTC Token: `0x18084fbA666a33d37592fA2633fD49a74DD93a88`
+- Balancer Pool: `0x02345DA85777B7E5ED740E0Df3BBcA93EF03fe9f`
+- Balancer V3 Router: `0xAE563E3f8219521950555F5962419C8919758Ea2`
 
 ### Verification
 After deployment, verify the contract on Etherscan with the constructor arguments.

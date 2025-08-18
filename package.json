@@ -43,8 +43,8 @@
 		"deploy-distributor-with-gas": "forge script contracts/Scripts/Deployer.s.sol:DeployDistributorWithGas --broadcast --legacy --verify --rpc-url polygon",
 		"deploy-distributor-with-gas-mainnet": "forge script contracts/Scripts/Deployer.s.sol:DeployDistributorWithGas --broadcast --legacy --verify --rpc-url mainnet",
 		"execute-distributor": "forge script contracts/Scripts/Deployer.s.sol:ExecuteDistributor --with-gas-price 130000000000 --slow --broadcast --verify --rpc-url polygon",
-		"deploy-migration-executor": "forge script contracts/Scripts/DeployMigrationOrchestrator.s.sol:DeployMigrationOrchestrator --broadcast --verify --rpc-url mainnet",
-		"deploy-migration-executor-polygon": "forge script contracts/Scripts/DeployMigrationOrchestrator.s.sol:DeployMigrationOrchestrator --broadcast --verify --rpc-url polygon",
+		"deploy-migration-executor": "forge script contracts/Scripts/DeployMigrationOrchestrator.s.sol:DeployMigrationOrchestrator --broadcast --verify --legacy --rpc-url mainnet",
+		"deploy-migration-executor-polygon": "forge script contracts/Scripts/DeployMigrationOrchestrator.s.sol:DeployMigrationOrchestrator --broadcast --verify --legacy --rpc-url polygon",
 		"show-orchestrator-commands": "echo 'Available orchestrator commands:' && echo '  bun run foundry-test-executor - Test executor contract' && echo '  bun run foundry-test-orchestrator - Test all orchestrator contracts' && echo '  bun run foundry-test-orchestrator-fork - Test orchestrator with mainnet fork' && echo '  bun run deploy-migration-executor - Deploy to mainnet' && echo '  bun run deploy-migration-executor-polygon - Deploy to polygon'"
 	},
 	"repository": {

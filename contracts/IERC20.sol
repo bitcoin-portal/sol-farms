@@ -42,6 +42,14 @@ interface IERC20 {
         view
         returns (uint256);
 
+    function allowance(
+        address _owner,
+        address _spender
+    )
+        external
+        view
+        returns (uint256);
+
     function mint(
         address _user,
         uint256 _amount

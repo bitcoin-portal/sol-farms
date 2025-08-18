@@ -1049,10 +1049,10 @@ contract FarmMigrationOrchestratorForkTest is Test {
         deal(address(verseToken), user1, verseForFarmA);
         verseToken.approve(address(simpleFarmA), verseForFarmA);
         simpleFarmA.farmDeposit(verseForFarmA);
-        
+
         uint256 farmAReceipts = simpleFarmA.balanceOf(user1);
         assertGt(farmAReceipts, 0, "User should have FarmA receipt tokens");
-        
+
         // Deploy executor for this test
         FarmMigrationOrchestratorV3Executor executor = new FarmMigrationOrchestratorV3Executor(
             address(simpleFarmA),
@@ -1062,7 +1062,7 @@ contract FarmMigrationOrchestratorForkTest is Test {
             BALANCER_POOL,
             BALANCER_V3_ROUTER
         );
-        
+
         simpleFarmA.approve(address(executor), farmAReceipts);
 
         vm.expectRevert("DEADLINE_EXPIRED");
@@ -1195,5 +1195,121 @@ contract FarmMigrationOrchestratorForkTest is Test {
         console2.log("tBTC ZAP test passed!");
 
         vm.stopPrank();
+    }
+
+        function testUserWalletMigration() public {
+        address userWallet = 0x22079A848266A7D2E40CF0fF71a6573D78adcF37;
+        address deployedOrchestrator = 0xfC87b70897F1450731A854CBf51dE7C22387F9d8;
+
+        // Mark contracts as persistent
+        vm.makePersistent(deployedOrchestrator);
+        vm.makePersistent(0xcbE5F4E8a112F25C2F902714e3cBB7955F19Bb36); // FarmA receipts
+        vm.makePersistent(0x1b69e6a995dEfff515c44592bF220bd123812eC4); // FarmB
+        vm.makePersistent(0x249cA82617eC3DfB2589c4c17ab7EC9765350a18); // VERSE
+        vm.makePersistent(0x18084fbA666a33d37592fA2633fD49a74DD93a88); // tBTC
+
+        // Get user's current FarmA receipt balance
+        IERC20 farmAReceipts = IERC20(0xcbE5F4E8a112F25C2F902714e3cBB7955F19Bb36);
+        uint256 userFarmABalance = farmAReceipts.balanceOf(userWallet);
+        console2.log("User's FarmA receipt balance:", userFarmABalance);
+
+        // Use a small amount for testing (1% of balance)
+        uint256 testAmount = userFarmABalance > 0 ? (userFarmABalance * 1) / 100 : 100 * 1e18;
+        if (testAmount > userFarmABalance) testAmount = userFarmABalance;
+        require(testAmount > 0, "No FarmA receipts to test with");
+
+        console2.log("Testing with FarmA receipt amount:", testAmount);
+
+        // Calculate parameters
+        uint256 verseToSwap = testAmount * 20 / 100; // 20% of VERSE for swap
+        uint256 minTbtcOut = 1;
+        uint256 deadline = block.timestamp + 3600;
+
+        console2.log("VERSE to swap:", verseToSwap);
+        console2.log("Min tBTC out:", minTbtcOut);
+        console2.log("Deadline:", deadline);
+
+        // Impersonate user wallet and approve
+        vm.prank(userWallet);
+        farmAReceipts.approve(deployedOrchestrator, testAmount);
+        console2.log("SUCCESS: Approved FarmA receipts to orchestrator");
+
+        // Execute migration
+        vm.prank(userWallet);
+        FarmMigrationOrchestratorV3Executor(deployedOrchestrator).executeMigration(
+            testAmount, verseToSwap, minTbtcOut, deadline
+        );
+
+        console2.log("SUCCESS: Migration executed successfully");
+
+        // Check final FarmB balance
+        ISimpleFarm simpleFarmB = ISimpleFarm(0x1b69e6a995dEfff515c44592bF220bd123812eC4);
+        uint256 finalFarmBBalance = simpleFarmB.balanceOf(userWallet);
+        console2.log("Final FarmB receipts:", finalFarmBBalance);
+
+        assertGt(finalFarmBBalance, 0, "Should have received FarmB receipt tokens");
+        console2.log("SUCCESS: Migration test completed");
+    }
+
+    function testDebugMigrationRevert() public {
+        address userWallet = 0x22079A848266A7D2E40CF0fF71a6573D78adcF37;
+        address deployedOrchestrator = 0xfC87b70897F1450731A854CBf51dE7C22387F9d8;
+
+        // Mark contracts as persistent
+        vm.makePersistent(deployedOrchestrator);
+        vm.makePersistent(0xcbE5F4E8a112F25C2F902714e3cBB7955F19Bb36); // FarmA receipts
+        vm.makePersistent(0x1b69e6a995dEfff515c44592bF220bd123812eC4); // FarmB
+        vm.makePersistent(0x249cA82617eC3DfB2589c4c17ab7EC9765350a18); // VERSE
+        vm.makePersistent(0x18084fbA666a33d37592fA2633fD49a74DD93a88); // tBTC
+
+        // Test parameters (same as your transaction)
+        uint256 testAmount = 1000000000000000000000; // 1000 tokens
+        uint256 verseToSwap = 200000000000000000000; // 200 tokens
+        uint256 minTbtcOut = 1;
+        uint256 deadline = 1755769510;
+
+        console2.log("=== Debug Test Parameters ===");
+        console2.log("User wallet:", userWallet);
+        console2.log("Orchestrator:", deployedOrchestrator);
+        console2.log("FarmA receipt amount:", testAmount);
+        console2.log("VERSE to swap:", verseToSwap);
+        console2.log("Min tBTC out:", minTbtcOut);
+        console2.log("Deadline:", deadline);
+
+        // Check balances
+        IERC20 farmAReceipts = IERC20(0xcbE5F4E8a112F25C2F902714e3cBB7955F19Bb36);
+        uint256 userFarmABalance = farmAReceipts.balanceOf(userWallet);
+        console2.log("FarmA receipts balance:", userFarmABalance);
+
+        // Check allowances
+        uint256 farmAAllowance = farmAReceipts.allowance(userWallet, deployedOrchestrator);
+        console2.log("FarmA allowance to orchestrator:", farmAAllowance);
+
+        // Check if user has enough FarmA receipts
+        require(userFarmABalance >= testAmount, "Insufficient FarmA receipts");
+
+        // Impersonate user and try to execute
+        vm.prank(userWallet);
+
+        // First, approve if needed
+        if (farmAAllowance < testAmount) {
+            farmAReceipts.approve(deployedOrchestrator, testAmount);
+            console2.log("SUCCESS: Approved FarmA receipts");
+        }
+
+        // Try to execute migration
+        try FarmMigrationOrchestratorV3Executor(deployedOrchestrator).executeMigration(
+            testAmount,
+            verseToSwap,
+            minTbtcOut,
+            deadline
+        ) {
+            console2.log("SUCCESS: Migration executed without revert");
+        } catch Error(string memory reason) {
+            console2.log("REVERT with reason:", reason);
+        } catch (bytes memory lowLevelData) {
+            console2.log("REVERT with low level data:");
+            console2.logBytes(lowLevelData);
+        }
     }
 }
